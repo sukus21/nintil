@@ -141,3 +141,10 @@ func (e *streamElement) Data() []byte {
 	}
 	return e.fs.readContent(e.id)
 }
+
+// Only valid for non-folders.
+// Initializes reader.
+func (e *streamElement) open() {
+	start, end := e.fs.readFilePosition(e.id)
+	e.r = io.NewSectionReader(e.fs.r, int64(start), int64(end)-int64(start))
+}

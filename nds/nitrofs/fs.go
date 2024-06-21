@@ -55,11 +55,13 @@ func (blob *streamFS) readOverlays(offset, size uint32) []Overlay {
 			return nil
 		}
 
-		overlay.element = &streamElement{
+		element := &streamElement{
 			fs:       blob,
 			id:       fileId,
 			isFolder: false,
 		}
+		element.open()
+		overlay.element = element
 		out[i] = overlay
 	}
 
@@ -114,8 +116,7 @@ func findByPath(elem *streamElement, path []string) fs.File {
 		if v.Name() == path[0] {
 			if len(path) == 1 {
 				if !v.isFolder {
-					start, end := elem.fs.readFilePosition(v.id)
-					v.r = io.NewSectionReader(elem.fs.r, int64(start), int64(end)-int64(start))
+					v.open()
 				}
 				return v
 			} else {
