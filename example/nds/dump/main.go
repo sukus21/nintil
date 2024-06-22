@@ -1,7 +1,3 @@
-// This example picks apart a ROM file into its components.
-// The binaries are dumped, the file system exported, icon converted,
-// the header exported as JSON, etc.
-
 package main
 
 import (

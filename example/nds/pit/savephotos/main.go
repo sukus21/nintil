@@ -1,7 +1,3 @@
-// Exports the first 10 save photos as PNG images.
-// The input ROM should be a valid Partners in Time ROM.
-// Otherwise the program will fail.
-
 package main
 
 import (
