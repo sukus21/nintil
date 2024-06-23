@@ -42,6 +42,37 @@ func NumDats(r io.ReaderAt, length int) int {
 	}
 }
 
+// Check if a binary blob is a .dat file
+func IsDat(dat []byte) bool {
+	first := 0
+	prev := 0
+	for i := 0; i+3 < len(dat); i += 4 {
+		offset := int(binary.LittleEndian.Uint32(dat[i : i+4]))
+
+		// Full file contents used, is a .dat file
+		if i >= 4 && int(offset) == len(dat) {
+			return i+4 == first
+		}
+
+		// Entry beyond file length, not a .dat file
+		if int(offset) > len(dat) {
+			return false
+		}
+
+		// Entry did not come in sequence, not a .dat
+		if offset < prev && prev != 0 {
+			return false
+		}
+		prev = offset
+		if i == 0 {
+			first = offset
+		}
+	}
+
+	// Abrupt end, not a .dat file
+	return false
+}
+
 // Unpack contents of .dat files
 func UnpackDat(dat []byte) [][]byte {
 
@@ -158,9 +189,9 @@ func Decompress(b []byte) []byte {
 }
 
 func ExportDat(b []byte, path string) {
-	os.MkdirAll(path, 0666)
+	os.MkdirAll(path, os.ModePerm)
 	f := UnpackDat(b)
 	for i, v := range f {
-		os.WriteFile(fmt.Sprintf("%s/%d", path, i), v, 0666)
+		os.WriteFile(fmt.Sprintf("%s/%d", path, i), v, os.ModePerm)
 	}
 }
