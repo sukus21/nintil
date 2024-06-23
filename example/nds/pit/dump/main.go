@@ -14,7 +14,6 @@ import (
 )
 
 func main() {
-	os.Args = append(os.Args, "C:/MARIO&LUIGI2_ARMP01_00.nds")
 	if len(os.Args) < 2 {
 		log.Fatal("must specify ROM as command line parameter")
 	}
