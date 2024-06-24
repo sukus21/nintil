@@ -132,6 +132,13 @@ Known escape sequences:
  - 0x0A: Newline
  - 0x35: Center string?
 
+### MFset
+I don't know what Mfset means, but I know what it contains.
+A MFset is a list of an unknown number of [strings](#strings).
+
+The beginning of the MFset structure contains a list of pointers (relative to the beginning of the MFset structure) to [strings](#strings).
+From what I can tell, there is no way to tell how many entries an MFset structure contains, as there is no terminator in the array list (afaik).
+
 ## File documentation
 
 ### BDataMon.dat
@@ -139,7 +146,7 @@ Despite the filename, this is NOT a `.dat` file.
 It contains the stats for all enemy types encountered in the game.
 
 The file is an array of the following structure:
-```
+```C
 struct enemy {
     0x00: u16, name ID in mfset_MonN.dat
     0x02-0x05: ???
@@ -166,68 +173,69 @@ Shrooblet
 ### mfset_AltmC.dat
 This is a [.dat file](#dat).
 Each entry corrosponds to a [language](#lanugage-order).
+Inside every entry is a [MFset](#mfset) structure.
 
-I don't think this is used for anything. It's once again an array of [string](#strings) pointers, but all of the strings are just the word "DUMMY" followed by a newline...
+All of the strings are just the word "DUMMY" followed by a newline...
+I don't think this is used?
 
 ### mfset_AltmE.dat
 This is a [.dat file](#dat).
 Each entry corrosponds to a [language](#lanugage-order).
+Inside every entry is a [MFset](#mfset) structure.
 
 Contains Bros. Attack descriptions.
-The start of the file is an array of [string](#strings) pointers.
-The pointers each corrospond to a page of text that displays above the Bros. Attack demo.
-
-The offsets are placed in a somewhat arbitrary order:
+Each string describes one page of a Bros. Attack demo description.
+The strings are stored in a somewhat arbitrary order:
 ```
-0x0000: Cannonballers description 1 offset
-0x0004: Green Shell description 1 offset
-0x0008: Green Shell description 2 offset
-0x000C: Dummy (unsued)
-0x0010: Red Shell description 1 offset
-0x0014: Red Shell description 2 offset
-0x0018: Bro Flower description 1 offset
-0x001C: Bro Flower description 2 offset
-0x0020: Smash Egg description 1 offset
-0x0024: Smash Egg description 1 offset
-0x0028: Mix Flower description 1 offset
-0x002C: Mix Flower description 2 offset
-0x0030: Trampoline description 1 offset
-0x0034: Ice Flower description 1 offset
-0x0038: Pocket Chomp description 1 offset
-0x003C: Copy Flower description 1 offset
-0x0040: Cannonballers description 2 offset
-0x0044: Ice Flower description 2 offset
-0x0048: Pocket Chomp description 2 offset
-0x004C: Trampoline description 2 offset
-0x0050: Solo Green Shell description offset
-0x0054: Solo Red Shell description offset
-0x0058: Solo Bro Flower description offset
-0x005C: Solo Smash Egg description offset
-0x0060: Solo Ice Flower description offset
-0x0064: Solo Pocket Chomp description offset
-0x0068: Copy Flower desctiption 2 offset
+Cannonballers description 1
+Green Shell description 1
+Green Shell description 2
+Dummy (unsued)
+Red Shell description 1
+Red Shell description 2
+Bro Flower description 1
+Bro Flower description 2
+Smash Egg description 1
+Smash Egg description 1
+Mix Flower description 1
+Mix Flower description 2
+Trampoline description 1
+Ice Flower description 1
+Pocket Chomp description 1
+Copy Flower description 1
+Cannonballers description 2
+Ice Flower description 2
+Pocket Chomp description 2
+Trampoline description 2
+Solo Green Shell description
+Solo Red Shell description
+Solo Bro Flower description
+Solo Smash Egg description
+Solo Ice Flower description
+Solo Pocket Chomp description
+Copy Flower desctiption 2
 ```
-
 
 ### mfset_AltmE2.dat
 This is a [.dat file](#dat).
 Each entry corrosponds to a [language](#lanugage-order).
+Inside every entry is a [MFset](#mfset) structure.
 
-This file contains target/status modifiers for Bros. attacks.
-It is an array of [string](#strings) pointers, one for each [Bros. Attack](#bros-attacks-by-id).
+This file contains target/status modifiers for each [Bros. Attack](#bros-attacks-by-id).
 
 ### mfset_AltmN.dat
 This is a [.dat file](#dat).
 Each entry corrosponds to a [language](#lanugage-order).
+Inside every entry is a [MFset](#mfset) structure.
 
-Contains names for Bros. Attacks.
+Contains name(s) of [Bros. Attacks](#bros-attacks-by-id).
 
-In the file is an array of the following structure:
+The strings are grouped as follows for every entry:
 ```C
-struct BrosAttackName {
-    0x00: *string, Name (singular)
-    0x04: *string, Name (plural)
-    0x08: *string, Name (storage full)
+struct ItemNames {
+    string, Singular         // Shown when player only has one
+    string, NamePlural       // Shown when player has multiple
+    string, NameStorageFull  // Shown when trying to obtain more at max capacity
 }
 ```
 
@@ -296,10 +304,9 @@ Cash-Back Badge
 ### mfset_BadgeE.dat
 This is a [.dat file](#dat).
 Each entry corrosponds to a [language](#lanugage-order).
+Inside every entry is a [MFset](#mfset) structure.
 
-Contains badge descriptions.
-The start of the file is an array of [string](#strings) pointers.
-There is one string for every [Badge](#badges-by-id).
+Contains badge descriptions, one for every(?) badge.
 I assume descriptions can be looked up using the same IDs from [mfset_BadgeN.dat](#mfset_badgendat), but I haven't double-checked.
 
 ### mfset_BadgeN.dat
@@ -312,6 +319,7 @@ Structurally identical to [mfset_AltmN.dat](#mfset_altmndat), just replace "Bros
 ### mfset_BonusE.dat
 This is a [.dat file](#dat).
 Each entry corrosponds to a [language](#lanugage-order).
+Inside every entry is a [MFset](#mfset) structure.
 
 Unsure what this file is for...
 It contains the string '---\n' 22 times for each (non-japanese) language.
@@ -320,15 +328,15 @@ It MIGHT be the cost of Bros. Attacks when using the Ulti-Free Badge? But there 
 ### mfset_Help.dat
 This is a [.dat file](#dat).
 Each entry corrosponds to a [language](#lanugage-order).
+Inside every entry is a [MFset](#mfset) structure.
 
-Contains string tables for all the in-battle help.
+Contains all the in-battle help.
 Action-command names, instructions for how to select things, etc.
-
-Contains an array of 21 [strings](#strings), with each string being pointed to by a table at the start of the file.
 
 ### mfset_MonN.dat
 This is a [.dat file](#dat).
 Each entry corrosponds to a [language](#lanugage-order).
+Inside every entry is a [MFset](#mfset) structure.
 
 Contains a list of names of all enemies in the game.
 
@@ -405,15 +413,16 @@ Intern Shroob
 ### mfset_UltmE.dat
 This is a [.dat file](#dat).
 Each entry corrosponds to a [language](#lanugage-order).
+Inside every entry is a [MFset](#mfset) structure.
 
 Contains consumable item descriptions.
-The start of the file is an array of [string](#strings) pointers.
-There is one string for every [Item](#item-ids).
+There is one for every(?) [Item](#item-ids).
 I assume descriptions can be looked up using the same IDs from [mfset_UltmN.dat](#mfset_ultmndat), but I haven't double-checked.
 
 ### mfset_UltmE2.dat
 This is a [.dat file](#dat).
 Each entry corrosponds to a [language](#lanugage-order).
+Inside every entry is a [MFset](#mfset) structure.
 
 Contains the string "DUMMY" for all languages except japanese.
 Likely not used at all.
@@ -421,6 +430,7 @@ Likely not used at all.
 ### mfset_UltmN.dat
 This is a [.dat file](#dat).
 Each entry corrosponds to a [language](#lanugage-order).
+Inside every entry is a [MFset](#mfset) structure.
 
 Contains name(s) of consumable items.
 
@@ -447,15 +457,16 @@ Bean
 ### mfset_WearE.dat
 This is a [.dat file](#dat).
 Each entry corrosponds to a [language](#lanugage-order).
+Inside every entry is a [MFset](#mfset) structure.
 
 Contains wear descriptions.
-The start of the file is an array of [string](#strings) pointers.
-There is one string for every [Wear](#wear-ids).
+There is one string for every(?) piece of [Wear](#wear-ids).
 I assume descriptions can be looked up using the same IDs from [mfset_WearN.dat](#mfset_wearndat), but I haven't double-checked.
 
 ### mfset_WearN.dat
 This is a [.dat file](#dat).
 Each entry corrosponds to a [language](#lanugage-order).
+Inside every entry is a [MFset](#mfset) structure.
 
 Contains names of wear items (slacks and pants).
 Structurally identical to [mfset_AltmN.dat](#mfset_altmndat), just replace "Bros. Attack" with "Wear".
