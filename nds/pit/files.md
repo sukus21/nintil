@@ -71,18 +71,18 @@ Contains documentation for all (known) Partners in Time file formats.
 * Menu
     * Menu.dat
     * MenuDat.dat
-    * MenuDat
+    * [MenuDat](#menudat)
 * MenuAI
     * BAI_iwasaki.dat
     * MAI_fujioka.dat
     * MAI_uchida.dat
-    * mfset_menu_mes.dat
-    * mfset_Mes_AreaName_out.dat
-    * mfset_Mes_LoadSave_out.dat
+    * [mfset_menu_mes.dat](#mfset_menu_mesdat)
+    * [mfset_Mes_AreaName_out.dat](#mfset_mes_areaname_outdat)
+    * [mfset_Mes_LoadSave_out.dat](#mfset_mes_loadsave_outdat)
     * mfset_Mes_MenuAI_out.dat
-    * mfset_Mes_Outline_out.dat
-    * mfset_option_mes.dat
-    * mfset_shop_mes.dat
+    * [mfset_Mes_Outline_out.dat](#mfset_mes_outline_outdat)
+    * [mfset_option_mes.dat](#mfset_option_mesdat)
+    * [mfset_shop_mes.dat](#mfset_shop_mesdat)
 * SavePoint
     * SavePhoto.dat
 * Sound
@@ -507,3 +507,59 @@ Rocket Jeans
 100-Point Pants
 Nothing
 ```
+
+### MenuDat
+A small part of a C header file.
+Contains a couple of `#define` statements, and nothing else.
+How it ended up in the games filesystem is a mystery...
+
+### mfset_menu_mes.dat
+This is a [.dat file](#dat).
+Each entry corrosponds to a [language](#lanugage-order).
+Inside every entry is a [MFset](#mfset) structure.
+
+This contains the names of the categories in the menu.
+It also contains the names and descriptions of key items for some reason...
+
+### mfset_Mes_AreaName_out.dat
+This is a [.dat file](#dat).
+Each entry corrosponds to a [language](#lanugage-order).
+Inside every entry is a [MFset](#mfset) structure.
+
+Contains the names of every area the player can save in.
+This is used on the save screen.
+
+The file contains 46 entries, but only 24 are used.
+The rest just say "TEMP".
+
+### mfset_Mes_LoadSave_out.dat
+This is a [.dat file](#dat).
+Each entry corrosponds to a [language](#lanugage-order).
+Inside every entry is a [MFset](#mfset) structure.
+
+Contains a majority of the text seen on the save screen.
+Stuff like the "save & continue", "continue from Peach's Castle", and more.
+They accounted for a lot more errors than I imagined with the savegames.
+
+### mfset_Mes_Outline_out.dat
+This is a [.dat file](#dat).
+Each entry corrosponds to a [language](#lanugage-order).
+Inside every entry is a [MFset](#mfset) structure.
+
+Contains the plot synopsis you see on the save screen.
+Laid out in Cronological order (I think) from entry 0 to 64.
+
+### mfset_option_mes.dat
+This is a [.dat file](#dat).
+Each entry corrosponds to a [language](#lanugage-order).
+Inside every entry is a [MFset](#mfset) structure.
+
+Contains text relevant to the Rumble Pak option (singular).
+
+### mfset_shop_mes.dat
+This is a [.dat file](#dat).
+Each entry corrosponds to a [language](#lanugage-order).
+Inside every entry is a [MFset](#mfset) structure.
+
+Contains the text shown in all shops.
+Also contains the dialouge for shopkeepers, spoken on the shopping menu.
