@@ -24,6 +24,7 @@ func DecodeMfsetGrouped(mfset []byte, groupSize int, groupNum int) [][]PitString
 	return out
 }
 
+// Create a MFset using an array of PitStrings.
 func EncodeMfset(mfset []PitString) []byte {
 	out := make([]byte, len(mfset)*4, 1024)
 	for i := range mfset {
@@ -31,4 +32,20 @@ func EncodeMfset(mfset []PitString) []byte {
 		out = append(out, mfset[i].Encode()...)
 	}
 	return out
+}
+
+// Get length of MFset structure.
+// Note that this might not be accurate at all.
+// If the input data is not a MFset, the result is likely garbage.
+func GetMfsetLength(mfset []byte) int {
+	num := 0
+	for i := 0; i+3 < len(mfset); i += 4 {
+		offset := binary.LittleEndian.Uint32(mfset[i:])
+		if int(offset) >= len(mfset) {
+			break
+		}
+		num++
+	}
+
+	return num
 }
