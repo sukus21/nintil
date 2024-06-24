@@ -20,18 +20,18 @@ Contains documentation for all (known) Partners in Time file formats.
     * BMes.dat
 * BData
     * [BDataMon.dat](#bdatamondat)
-    * [mfset_AltmC.dat](#mfset_altmcdat)
-    * [mfset_AltmE.dat](#mfset_altmedat)
-    * [mfset_AltmE2.dat](#mfset_altme2dat)
-    * [mfset_AltmN.dat](#mfset_altmndat)
+    * [mfset_AItmC.dat](#mfset_aitmcdat)
+    * [mfset_AItmE.dat](#mfset_aitmedat)
+    * [mfset_AItmE2.dat](#mfset_aitme2dat)
+    * [mfset_AItmN.dat](#mfset_aitmndat)
     * [mfset_BadgeE.dat](#mfset_badgeedat)
     * [mfset_BadgeN.dat](#mfset_badgendat)
     * [mfset_BonusE.dat](#mfset_bonusedat)
     * [mfset_Help.dat](#mfset_helpdat)
     * [mfset_MonN.dat](#mfset_monndat)
-    * [mfset_UltmE.dat](#mfset_ultmedat)
-    * [mfset_UltmE2.dat](#mfset_ultme2dat)
-    * [mfset_UltmN.dat](#mfset_ultmndat)
+    * [mfset_UItmE.dat](#mfset_uitmedat)
+    * [mfset_UItmE2.dat](#mfset_uitme2dat)
+    * [mfset_UItmN.dat](#mfset_uitmndat)
     * [mfset_WearE.dat](#mfset_wearedat)
     * [mfset_WearN.dat](#mfset_wearndat)
 * BFx
@@ -170,7 +170,7 @@ Shrooblet
 ...
 ```
 
-### mfset_AltmC.dat
+### mfset_AItmC.dat
 This is a [.dat file](#dat).
 Each entry corrosponds to a [language](#lanugage-order).
 Inside every entry is a [MFset](#mfset) structure.
@@ -178,7 +178,7 @@ Inside every entry is a [MFset](#mfset) structure.
 All of the strings are just the word "DUMMY" followed by a newline...
 I don't think this is used?
 
-### mfset_AltmE.dat
+### mfset_AItmE.dat
 This is a [.dat file](#dat).
 Each entry corrosponds to a [language](#lanugage-order).
 Inside every entry is a [MFset](#mfset) structure.
@@ -216,14 +216,14 @@ Solo Pocket Chomp description
 Copy Flower desctiption 2
 ```
 
-### mfset_AltmE2.dat
+### mfset_AItmE2.dat
 This is a [.dat file](#dat).
 Each entry corrosponds to a [language](#lanugage-order).
 Inside every entry is a [MFset](#mfset) structure.
 
 This file contains target/status modifiers for each [Bros. Attack](#bros-attacks-by-id).
 
-### mfset_AltmN.dat
+### mfset_AItmN.dat
 This is a [.dat file](#dat).
 Each entry corrosponds to a [language](#lanugage-order).
 Inside every entry is a [MFset](#mfset) structure.
@@ -314,7 +314,7 @@ This is a [.dat file](#dat).
 Each entry corrosponds to a [language](#lanugage-order).
 
 Contains names of badges.
-Structurally identical to [mfset_AltmN.dat](#mfset_altmndat), just replace "Bros. Attack" with "Badge".
+Structurally identical to [mfset_AItmN.dat](#mfset_aitmndat), just replace "Bros. Attack" with "Badge".
 
 ### mfset_BonusE.dat
 This is a [.dat file](#dat).
@@ -410,16 +410,16 @@ Intern Shroob
 ```
 
 
-### mfset_UltmE.dat
+### mfset_UItmE.dat
 This is a [.dat file](#dat).
 Each entry corrosponds to a [language](#lanugage-order).
 Inside every entry is a [MFset](#mfset) structure.
 
 Contains consumable item descriptions.
 There is one for every(?) [Item](#item-ids).
-I assume descriptions can be looked up using the same IDs from [mfset_UltmN.dat](#mfset_ultmndat), but I haven't double-checked.
+I assume descriptions can be looked up using the same IDs from [mfset_UItmN.dat](#mfset_uitmndat), but I haven't double-checked.
 
-### mfset_UltmE2.dat
+### mfset_UItmE2.dat
 This is a [.dat file](#dat).
 Each entry corrosponds to a [language](#lanugage-order).
 Inside every entry is a [MFset](#mfset) structure.
@@ -427,14 +427,14 @@ Inside every entry is a [MFset](#mfset) structure.
 Contains the string "DUMMY" for all languages except japanese.
 Likely not used at all.
 
-### mfset_UltmN.dat
+### mfset_UItmN.dat
 This is a [.dat file](#dat).
 Each entry corrosponds to a [language](#lanugage-order).
 Inside every entry is a [MFset](#mfset) structure.
 
 Contains name(s) of consumable items.
 
-Structurally identical to [mfset_AltmN.dat](#mfset_altmndat), just replace "Bros. Attack" with "item".
+Structurally identical to [mfset_AItmN.dat](#mfset_aitmndat), just replace "Bros. Attack" with "item".
 
 #### Item IDs
 ```
@@ -469,7 +469,7 @@ Each entry corrosponds to a [language](#lanugage-order).
 Inside every entry is a [MFset](#mfset) structure.
 
 Contains names of wear items (slacks and pants).
-Structurally identical to [mfset_AltmN.dat](#mfset_altmndat), just replace "Bros. Attack" with "Wear".
+Structurally identical to [mfset_AItmN.dat](#mfset_aitmndat), just replace "Bros. Attack" with "Wear".
 
 #### Wear IDs
 ```
