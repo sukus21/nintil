@@ -84,7 +84,7 @@ Contains documentation for all (known) Partners in Time file formats.
     * [mfset_option_mes.dat](#mfset_option_mesdat)
     * [mfset_shop_mes.dat](#mfset_shop_mesdat)
 * SavePoint
-    * SavePhoto.dat
+    * [SavePhoto.dat](#savephotodat)
 * Sound
     * sound_data.sdat
 * Title
@@ -563,3 +563,35 @@ Inside every entry is a [MFset](#mfset) structure.
 
 Contains the text shown in all shops.
 Also contains the dialouge for shopkeepers, spoken on the shopping menu.
+
+### SavePhoto.dat
+This is a [.dat file](#dat).
+
+This file contains the images seen in the save album.
+Each image is 256x192 pixels.
+The same resolution as a DS screen.
+There is a lot of empty space around each image.
+
+The entries in the file are grouped together in groups of 3:
+* Tileset
+* Tilemap
+* Palette
+
+#### Tileset
+The tileset file is LZ10 compressed.
+It contains 8x8 tiles, at 8BPP.
+
+#### Tilemap
+The tilemap file is LZ10 compressed.
+It contains 32*24 = 768 16-bit integers, which is interpreted as follows:
+* Bits 0-9 contain the tile ID (from the tileset data).
+* Bit 10 toggles horizontal mirroring of the tile.
+* Bit 11 toggles vertical mirroring of the tile.
+* bits 12-15 are unused(?)
+
+The tilemap goes from left-to-right, row by row.
+
+#### Palette
+The palette is not compressed.
+The colors are stored in RGB555 format.
+The first color of every palette is ignored, as it is treated as transparent.
