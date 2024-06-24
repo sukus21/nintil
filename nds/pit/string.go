@@ -12,12 +12,13 @@ type PitString struct {
 }
 
 // Returns the (non-formatted) text
+// TODO: what text encoding for non-ascii characters is used?
 func (s *PitString) String() string {
 	b := strings.Builder{}
 	escapePos := 0
 
 	for i, escapes := range s.escapeCount {
-		for ; escapes >= 0; escapes-- {
+		for ; escapes > 0; escapes-- {
 			escape := s.escape[escapePos]
 			escapePos++
 
@@ -38,7 +39,7 @@ func (s *PitString) Encode() []byte {
 	escapePos := 0
 
 	for i, formats := range s.escapeCount {
-		for ; formats >= 0; formats-- {
+		for ; formats > 0; formats-- {
 			b.WriteByte(0xFF)
 			b.Write(s.escape[escapePos])
 			escapePos++
@@ -65,6 +66,7 @@ func DecodeString(str []byte) PitString {
 			chr, _ := buf.ReadByte()
 			if chr != 0xFF {
 				buf.UnreadByte()
+				out.escapeCount = append(out.escapeCount, escapeCount)
 				break
 			}
 
@@ -72,10 +74,8 @@ func DecodeString(str []byte) PitString {
 			chr, _ = buf.ReadByte()
 
 			switch chr {
-			case '\n':
-				out.escape = append(out.escape, []byte{chr})
 			default:
-				panic("unknown PitString escape sequence")
+				out.escape = append(out.escape, []byte{chr})
 			}
 		}
 
