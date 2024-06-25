@@ -572,6 +572,7 @@ Each image is 256x192 pixels.
 The same resolution as a DS screen.
 There is a lot of empty space around each image.
 
+There are 33 total images in the file, the last 5 being unused placeholders.
 The entries in the file are grouped together in groups of 3:
 * Tileset
 * Tilemap
