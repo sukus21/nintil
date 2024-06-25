@@ -11,6 +11,14 @@ type PitString struct {
 	escapeCount []int
 }
 
+// Escape codes used in the PitString format.
+const (
+	PitString_Newline      = 0x00
+	PitString_ColorDefault = 0x20
+	PitString_ColorGreen   = 0x27
+	PitString_ColorRed     = 0x2D
+)
+
 // Returns the (non-formatted) text
 // TODO: what text encoding for non-ascii characters is used?
 func (s *PitString) String() string {
@@ -23,7 +31,7 @@ func (s *PitString) String() string {
 			escapePos++
 
 			switch escape[0] {
-			case '\n':
+			case PitString_Newline:
 				b.WriteByte('\n')
 			}
 		}
@@ -112,5 +120,5 @@ func EncodeString(str PitString) []byte {
 // Builds a PitString from a regular string.
 func NewString(str string) PitString {
 	split := strings.Split(str, "\n")
-	return DecodeString([]byte(strings.Join(split, "\xFF\n")))
+	return DecodeString([]byte(strings.Join(split, "\xFF\x00")))
 }

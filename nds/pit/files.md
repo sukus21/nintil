@@ -128,9 +128,11 @@ The data of each entry goes from its beginning offset, to the beginning of the n
 Strings are null-terminated. 
 Escape character is 0xFF.
 Known escape sequences:
- - 0x00: Split string?
- - 0x0A: Newline
- - 0x35: Center string?
+- 0x00: Newline
+- 0x20: Color (default)
+- 0x27: Color (green)
+- 0x2D: Color (red)
+- 0x35: Center string?
 
 ### MFset
 I don't know what Mfset means, but I know what it contains.
