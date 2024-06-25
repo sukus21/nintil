@@ -1,7 +1,6 @@
 package nds
 
 import (
-	"bytes"
 	"fmt"
 	"image"
 	"io"
@@ -14,9 +13,8 @@ import (
 )
 
 // Nintendo DS ROM structure.
-// Contains most of the things you probably want to get from a ROM file. m
+// Contains most of the things you probably want to get from a ROM file.
 type Rom struct {
-	raw        []byte
 	reader     io.ReadSeeker
 	mapping    *mapping.Mapping
 	header     *header
@@ -32,12 +30,10 @@ func (o *Rom) String() string {
 
 // Open a new ROM.
 // TODO: ROM validation.
-// TODO: Don't load the enture ROM into memory for no reason
-func OpenROM(r io.Reader) (*Rom, error) {
-	buf, _ := io.ReadAll(r)
+func OpenROM(r util.ReadAtSeeker) (*Rom, error) {
 	rom := &Rom{
-		reader:  bytes.NewReader(buf),
-		raw:     buf,
+		reader: r,
+		// TODO: allow different mapping sizes
 		mapping: mapping.NewMapping(0x4000000),
 	}
 	if err := rom.openHeader(); err != nil {
