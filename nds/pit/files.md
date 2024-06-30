@@ -70,7 +70,7 @@ Contains documentation for all (known) Partners in Time file formats.
     * StatFontSet.dat
 * Menu
     * Menu.dat
-    * MenuDat.dat
+    * [MenuDat.dat](#menudatdat)
     * [MenuDat](#menudat)
 * MenuAI
     * BAI_iwasaki.dat
@@ -509,6 +509,140 @@ Rocket Jeans
 100-Point Pants
 Nothing
 ```
+
+### MenuDat.dat
+This is a [.dat file](#dat).
+It contains various graphics data for the games menu's.
+There is no system to any of the files here.
+I am just going to list what I have been able to make sense of.
+
+Every entry in the file is LZ10 compressed, except for the palettes, which are uncompressed.
+All tilesets are 8bpp, unless otherwise noted.
+
+#### Full-screen tilemaps
+| Tileset | Tilemap | Palette | Description |
+|-|-|-|-|
+| 0 | 1 | 2 | Suitcase, lid opening |
+| 3 | 4 | 7 | Suitcase bottom-screen |
+| 3 | 5 | 7 | Suitcase bottom-screen, w/o bros & cobalt star |
+| 3 | 6 | 7 | Suitcase bottom-screen, w/o cobalt star |
+| 8 | 9 | 12 | Suitcase bottom-screen, blurred |
+| 8 | 10 | 12 | Suitcase bottom-screen, blurred, w/o bros & cobalt star |
+| 8 | 11 | 12 | Suitcase bottom-screen, blurred, w/o cobalt star |
+| 13 | 14 | 15 | Suitcase top-screen |
+| 16 | 17 | 18 | Suitcase top-screen, grayed out baby slots mask? (4bpp) |
+| 20 | 21 | 19 | Suitcase bottom-screen, items |
+| 20 | 22 | 19 | Suitcase bottom-screen, key items |
+| 23 | 24 | 19 | Suitcase bottom-screen, blurred, items |
+| 25 | 26 | 19 | Suitcase bottom-screen, blurred, key items |
+| 28 | 29 | 27 | Suitcase bottom-screen, gear w/o badges |
+| 28 | 30 | 27 | Suitcase bottom-screen, gear |
+| 31 | 32 | 27 | Suitcase bottom-screen, blurred, gear w/o badges |
+| 31 | 32 | 27 | Suitcase bottom-screen, blurred, gear |
+| 35 | 36 | 34 | Suitcase bottom-screen, badges |
+| 37 | 38 | 34 | Suitcase bottom-screen, blurred, badges |
+| 40 | 41 | 39 | Suitcase bottom-screen, stats w/o badges |
+| 40 | 42 | 39 | Suitcase bottom-screen, stats |
+| 43 | 44 | 39 | Suitcase bottom-screen, blurred, stats w/o badges |
+| 43 | 45 | 39 | Suitcase bottom-screen, blurred, stats |
+| 47 | 48 | 46 | Suitcase bottom-screen, bros. attacks |
+| 49 | 50 | 46 | Suitcase bottom-screen, blurred, bros. attacks |
+| 52 | 53 | 51 | Suitcase bottom-screen, cobalt star |
+| 54 | 55 | 51 | Suitcase bottom-screen, cobalt-star (fade-in) |
+| 72 | 73 | 74 | Suitcase top-screen, empty? (unused?) |
+| 75 | 76 | 77 | Suitcase top-screen, all bros locked? (unused?) |
+| 81 | 82 | 83 | Suitcase top-screen, empty, checkered at bottom? (unused?) |
+| 84 | 86 | 85 | Save menu-looking popup |
+| 84 | 87 | 85 | End of battle menu |
+| 84 | 88 | 85 | End of battle, item rewards (?) |
+| 84 | 89 | 85 | Shop, buy menu (coins) |
+| 84 | 90 | 85 | Shop, category selector |
+| 84 | 91 | 85 | Shop, buy menu (beans) |
+| 92 | 93 | 94 | Peach's castle shop |
+| 95 | 96 | 97 | Glitzy Caves shop |
+| 98 | 99 | 100 | Toad Town shop |
+| 101 | 102 | 103 | Fawful shop |
+| 116 | 117 | 118 | Save menu, bottom-screen background |
+| 119 | 120 | 121 | Save menu, initializing save data popup (4bpp) |
+| 122 | 123 | 124 | Save menu, top-screen background |
+| 136 | 137 | 138 | "Nintendo" logo (4bpp) |
+| 139 | 140 | 138 | "Nintendo" logo again\*? (4bpp) |
+| 142 | 143 | 144 | "Alphadream Corporation" logo (4bpp) |
+
+\* Tilemap 137 and 140 are identical, but tileset 136 and 139 are not?
+I cannot find a difference though.
+
+#### Tile graphics without tilemap data
+| Tilemap | Palette | Description |
+|-|-|-|
+| 56 | 57 | Suitcase opening, bottom screen (?) |
+| 58 | 64 | Level-up menu text (japanese) |
+| 59 | 64 | Level-up menu text (english) |
+| 60 | 64 | Level-up menu text (french) |
+| 61 | 64 | Level-up menu text (german) |
+| 62 | 64 | Level-up menu text (italian) |
+| 63 | 64 | Level-up menu text (spanish) |
+| 65 | 66 | Don't know, looks like snow? (4bpp) |
+| 67 | 64 | Equipment stats font (4bpp) |
+| 68 | 64 | Equipment stats font (alternate) (4bpp) |
+| 69 | 70 | Small (8x8) item icons |
+| 104 | 106 | Equipment stats font (4bpp) (again?) |
+| 105 | 106 | Equipment stats font (4bpp) (alternate) |
+| 107 | 113 | Level-up stats (japanese) |
+| 108 | 113 | Level-up stats (english) |
+| 109 | 113 | Level-up stats (french) |
+| 110 | 113 | Level-up stats (german) |
+| 111 | 113 | Level-up stats (italian) |
+| 112 | 113 | Level-up stats (spanish) |
+| 114 | 115 | Battle HUD, character heads |
+
+#### Bitmap graphics
+| Bitmap | Palette | Description |
+|-|-|-|
+| 127 | 133 | Save-profile, character stats (4bpp) (japanese) |
+| 128 | 133 | Save-profile, character stats (4bpp) (english) |
+| 129 | 133 | Save-profile, character stats (4bpp) (french) |
+| 130 | 133 | Save-profile, character stats (4bpp) (german) |
+| 131 | 133 | Save-profile, character stats (4bpp) (italian) |
+| 132 | 133 | Save-profile, character stats (4bpp) (spanish) |
+| 134 | 135 | Level-up/stats font (4bpp) |
+| 145 | 146 | Credits image 1 |
+| 147 | 148 | Credits image 2 |
+| 149 | 150 | Credits image 3 |
+| 151 | 152 | Credits image 4 |
+| 153 | 154 | Credits image 5 |
+| 155 | 156 | Credits image 6 |
+| 157 | 158 | Credits image 7 |
+| 159 | 160 | Credits image 8 |
+| 161 | 162 | Credits image 9 |
+| 163 | 164 | Credits image 10 |
+| 165 | 166 | Credits image 11 |
+| 167 | 168 | Credits image 12 |
+| 169 | 170 | Credits image 13 |
+| 171 | 172 | Credits image 14 |
+| 173 | 174 | Credits image 15 |
+| 175 | 176 | Credits image 16 |
+| 177 | ??? | Clouds, don't know where they are used (4bpp) |
+| 179 | 180 | "The End" text (4bpp) (japanese) |
+| 181 | 182 | "The End" text (4bpp) (english) |
+| 183 | 184 | "The End" text (4bpp) (french) |
+| 185 | 186 | "The End" text (4bpp) (german) |
+| 187 | 188 | "The End" text (4bpp) (italian) |
+| 189 | 190 | "The End" text (4bpp) (spanish) |
+
+#### Unknown
+I have no idea what these are used for:
+* 71, palette
+* 78, tileset
+* 79, tileset
+* 80, palette
+* 125, tilemap (?)
+* 126, palette
+* 141, palette
+* 178, palette
+* 191, bitmap
+* 192, palette
+* 193, palette
 
 ### MenuDat
 A small part of a C header file.
