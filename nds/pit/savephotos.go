@@ -5,7 +5,7 @@ import (
 	"image"
 	"io"
 
-	"github.com/sukus21/nintil/lz10"
+	"github.com/sukus21/nintil/compression/lz10"
 	"github.com/sukus21/nintil/nds"
 	"github.com/sukus21/nintil/util"
 	"github.com/sukus21/nintil/util/ezbin"
