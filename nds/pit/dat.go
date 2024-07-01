@@ -1,7 +1,6 @@
 package pit
 
 import (
-	"bytes"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -103,89 +102,6 @@ func UnpackDatSingle(dat []byte, i int) []byte {
 	offset := binary.LittleEndian.Uint32(dat[i*4:])
 	offsetLength := binary.LittleEndian.Uint32(dat[i*4+4:])
 	return dat[offset:offsetLength]
-}
-
-// Decompress file
-func Decompress(b []byte) []byte {
-	buf := bytes.NewBuffer(b)
-
-	// Get decompressed file size
-	h, _ := buf.ReadByte()
-	size := uint32(h & 0x3F)
-	varlen := h >> 6
-	for i := 6; varlen > 0; i += 6 {
-		n, _ := buf.ReadByte()
-		size |= uint32(n) << i
-		varlen--
-	}
-
-	// Get block count
-	h, _ = buf.ReadByte()
-	blockCount := uint32(h & 0x3F)
-	varlen = h >> 6
-	for i := 6; varlen > 0; i += 6 {
-		n, _ := buf.ReadByte()
-		blockCount |= uint32(n) << i
-		varlen--
-	}
-
-	// Read block data
-	w := bytes.NewBuffer([]byte{})
-	for i := uint32(0); i <= blockCount; i++ {
-		blockSize := uint16(0)
-		binary.Read(buf, binary.LittleEndian, &blockSize)
-
-		// Read command list
-		for {
-			comm, _ := buf.ReadByte() // Redundant information
-			finishBlock := false
-
-			// Execute commands
-			for j := 0; j < 8; j += 2 {
-				inst := (comm >> j) & 0x03
-
-				if inst == 0x00 {
-					// End of block
-					finishBlock = true
-					break
-
-				} else if inst == 0x01 {
-					// Write single byte
-					d, _ := buf.ReadByte()
-					w.WriteByte(d)
-
-				} else if inst == 0x02 {
-					// Rewind and copy old data
-					rewindBase, _ := buf.ReadByte()
-					oparand, _ := buf.ReadByte()
-					rewindCount := uint32(oparand)&0xF + 2
-					rewindAmount := uint32(rewindBase) + (16 * uint32(oparand&0xF0))
-
-					writtenData := w.Bytes()
-					rewindOffset := uint32(len(writtenData)) - rewindAmount
-					rewindData := writtenData[rewindOffset : rewindOffset+rewindCount]
-					w.Write(rewindData)
-
-				} else {
-					// Run-length encoding
-					count, _ := buf.ReadByte()
-					d, _ := buf.ReadByte()
-					data := make([]byte, count+2)
-					for i := range data {
-						data[i] = d
-					}
-					w.Write(data)
-				}
-			}
-
-			// Finish current block
-			if finishBlock {
-				break
-			}
-		}
-	}
-
-	return w.Bytes()
 }
 
 func ExportDat(b []byte, path string) {

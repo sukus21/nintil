@@ -6,6 +6,7 @@ import (
 	"io"
 	"math/bits"
 
+	"github.com/sukus21/nintil/compression/rlz"
 	"github.com/sukus21/nintil/nds"
 )
 
@@ -13,10 +14,11 @@ func DecodeDebugMap(rom *nds.Rom, set int) image.PalettedImage {
 	elem, _ := rom.Filesystem.Open("Etc/Sasaki/TestMapData.dat")
 	raw, _ := io.ReadAll(elem)
 	dat := UnpackDat(raw)
-	tlm := Decompress(dat[set*3+2])
+	tlm, _ := rlz.Decompress(dat[set*3+2])
 
 	// Create tile graphics
-	tiles := nds.DeserializeTiles8BPP(Decompress(dat[set*3+1]))
+	tileData, _ := rlz.Decompress(dat[set*3+1])
+	tiles := nds.DeserializeTiles8BPP(tileData)
 	palette := nds.DeserializePalette(dat[set*3+0], true)
 
 	// Construct image
