@@ -126,18 +126,8 @@ const alignment = uint32(0x0200)
 // Builds a NitroFS filesystem from a fs.FS.
 // If the given filesystem implements nitrofs.NitroFS, overlay files will be written as well.
 func Build(w util.WriteAtSeeker, fsys fs.FS, mmap *mapping.Mapping) (info *Info, err error) {
+	defer util.Recover(&err)
 	info = &Info{}
-
-	// Saves a lot of error handling for me
-	defer func() {
-		recVal := recover()
-		if recErr, ok := recVal.(error); ok {
-			info = nil
-			err = recErr
-		} else if recVal != nil {
-			panic(recVal)
-		}
-	}()
 
 	// Is this a valid NitroFS?
 	fsc := util.Must1(validate(fsys))
