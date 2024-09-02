@@ -27,8 +27,11 @@ func NewReader(src io.Reader) (io.Reader, error) {
 	}
 
 	return &LZ10Reader{
-		src:    src,
 		blocks: h >> 8,
+		src: &ezbin.EndianedReader{
+			Reader:    src,
+			ByteOrder: binary.BigEndian,
+		},
 	}, nil
 }
 
@@ -78,7 +81,7 @@ func (r *LZ10Reader) Read(buf []byte) (int, error) {
 	r.buf = make([]byte, 0, 0x1000)
 	for i := 0; i < 8; i++ {
 		if inst&0x80 != 0 {
-			conf := ezbin.ReadSingleBigEnd[uint16](r.src)
+			conf := ezbin.ReadSingle[uint16](r.src)
 
 			// Rewind and copy old data
 			rewindCount := int((conf >> 12) + 3)
