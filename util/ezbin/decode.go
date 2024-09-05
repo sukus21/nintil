@@ -56,25 +56,55 @@ func decodeValue(t reflect.Value, r *EndianedReader, tags decodeTags) {
 
 	// Basic kinds
 	case reflect.Uint8:
-		t.SetUint(uint64(ReadSingle[uint8](r)))
+		val := uint64(ReadSingle[uint8](r))
+		if t.CanSet() {
+			t.SetUint(val)
+		}
 	case reflect.Uint16:
-		t.SetUint(uint64(ReadSingle[uint16](r)))
+		val := uint64(ReadSingle[uint16](r))
+		if t.CanSet() {
+			t.SetUint(val)
+		}
 	case reflect.Uint32:
-		t.SetUint(uint64(ReadSingle[uint32](r)))
+		val := uint64(ReadSingle[uint32](r))
+		if t.CanSet() {
+			t.SetUint(val)
+		}
 	case reflect.Uint64:
-		t.SetUint(uint64(ReadSingle[uint64](r)))
+		val := uint64(ReadSingle[uint64](r))
+		if t.CanSet() {
+			t.SetUint(val)
+		}
 	case reflect.Int8:
-		t.SetInt(int64(ReadSingle[int8](r)))
+		val := int64(ReadSingle[int8](r))
+		if t.CanSet() {
+			t.SetInt(val)
+		}
 	case reflect.Int16:
-		t.SetInt(int64(ReadSingle[int16](r)))
+		val := int64(ReadSingle[int16](r))
+		if t.CanSet() {
+			t.SetInt(val)
+		}
 	case reflect.Int32:
-		t.SetInt(int64(ReadSingle[int32](r)))
+		val := int64(ReadSingle[int32](r))
+		if t.CanSet() {
+			t.SetInt(val)
+		}
 	case reflect.Int64:
-		t.SetInt(int64(ReadSingle[int64](r)))
+		val := int64(ReadSingle[int64](r))
+		if t.CanSet() {
+			t.SetInt(val)
+		}
 	case reflect.Float32:
-		t.SetFloat(float64(ReadSingle[float32](r)))
+		val := float64(ReadSingle[float32](r))
+		if t.CanSet() {
+			t.SetFloat(val)
+		}
 	case reflect.Float64:
-		t.SetFloat(float64(ReadSingle[float64](r)))
+		val := float64(ReadSingle[float64](r))
+		if t.CanSet() {
+			t.SetFloat(val)
+		}
 
 	// Special case: read byte order
 	case reflect.Interface:
@@ -97,16 +127,24 @@ func decodeValue(t reflect.Value, r *EndianedReader, tags decodeTags) {
 		if tags.length < 0 {
 			panic(ErrSliceMissingLength)
 		}
-		t.Set(reflect.MakeSlice(t.Type(), tags.length, tags.length))
-		decodeArray(t, r)
+		val := reflect.MakeSlice(t.Type(), tags.length, tags.length)
+		decodeArray(val, r)
+		if t.CanSet() {
+			t.Set(val)
+		}
 
 	// Other weird ones
 	case reflect.Bool:
-		t.SetBool(ReadSingle[byte](r) != 0)
+		val := ReadSingle[byte](r) != 0
+		if t.CanSet() {
+			t.SetBool(val)
+		}
 	case reflect.Pointer:
 		val := reflect.New(t.Type())
 		decodeValue(val.Elem(), r, tags)
-		t.Set(val)
+		if t.CanSet() {
+			t.Set(val)
+		}
 	case reflect.String:
 		decodeString(t, r, tags)
 
@@ -215,7 +253,9 @@ func decodeString(t reflect.Value, r *EndianedReader, tags decodeTags) {
 		panic(ErrUnknownString)
 	}
 
-	t.SetString(str)
+	if t.CanSet() {
+		t.SetString(str)
+	}
 }
 
 func GetEndianFromSignature(signature [2]byte) binary.ByteOrder {
