@@ -170,13 +170,7 @@ func decodeStruct(t reflect.Value, r *EndianedReader) {
 				panic(ErrInvalidByteOrderType)
 			}
 
-			if bytes == SignatureBE {
-				r.ByteOrder = binary.BigEndian
-			} else if bytes == SignatureLE {
-				r.ByteOrder = binary.LittleEndian
-			} else {
-				panic(ErrInvalidByteOrder)
-			}
+			r.ByteOrder = getEndianFromSignature(bytes)
 		}
 	}
 }
@@ -207,4 +201,14 @@ func decodeString(t reflect.Value, r *EndianedReader, tags decodeTags) {
 	}
 
 	t.SetString(str)
+}
+
+func GetEndianFromSignature(signature [2]byte) binary.ByteOrder {
+	if signature == SignatureBE {
+		return binary.BigEndian
+	} else if signature == SignatureLE {
+		return binary.LittleEndian
+	} else {
+		panic(ErrInvalidByteOrder)
+	}
 }
