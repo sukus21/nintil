@@ -76,6 +76,20 @@ func decodeValue(t reflect.Value, r *EndianedReader, tags decodeTags) {
 	case reflect.Float64:
 		t.SetFloat(float64(ReadSingle[float64](r)))
 
+	// Special case: read byte order
+	case reflect.Interface:
+		typ := t.Type()
+		switch {
+		case typ.Implements(reflect.TypeFor[binary.ByteOrder]()):
+			t2 := reflect.New(reflect.TypeFor[[2]byte]()).Elem()
+			decodeValue(t2, r, tags)
+			newEndian := GetEndianFromSignature(t2.Interface().([2]byte))
+			t.Set(reflect.ValueOf(newEndian))
+
+		default:
+			panic("cannot deserialize this kind of type")
+		}
+
 	// Arrays and slices
 	case reflect.Array:
 		decodeArray(t, r)
@@ -165,12 +179,13 @@ func decodeStruct(t reflect.Value, r *EndianedReader) {
 
 		// Set byte order?
 		if _, ok := fieldType.Tag.Lookup(tagByteorder); ok {
-			bytes, ok := indir.Interface().([2]byte)
-			if !ok {
+			if bytes, ok := indir.Interface().([2]byte); ok {
+				r.ByteOrder = GetEndianFromSignature(bytes)
+			} else if bo, ok := indir.Interface().(binary.ByteOrder); ok {
+				r.ByteOrder = bo
+			} else {
 				panic(ErrInvalidByteOrderType)
 			}
-
-			r.ByteOrder = getEndianFromSignature(bytes)
 		}
 	}
 }
