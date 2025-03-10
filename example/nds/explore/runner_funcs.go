@@ -9,6 +9,7 @@ import (
 	"os"
 
 	"github.com/sukus21/nintil/nds"
+	"github.com/sukus21/nintil/nds/nsb"
 	"github.com/sukus21/nintil/nds/pit"
 	"github.com/sukus21/nintil/util"
 )
@@ -187,5 +188,14 @@ func addNdsFuncs(r *Runner) {
 		}
 
 		return img
+	})
+
+	// Do a thing
+	// - io.ReadSeeker
+	// + ???
+	r.AddFunc("bmd", func(r *Runner) any {
+		rs := ReadArg[io.ReadSeeker](r)
+		util.Must1(nsb.ReadNsbmd(rs))
+		return nil
 	})
 }
