@@ -59,7 +59,7 @@ Contains documentation for all (known) Partners in Time file formats.
 * FieldFx
     * FieldFxData.dat
 * FMap
-    * FMapData.dat
+    * [FMapData.dat](#fmapdatadat)
 * FObj
     * FObj.dat
 * FObjMon
@@ -509,6 +509,119 @@ Rocket Jeans
 100-Point Pants
 Nothing
 ```
+
+### FMapData.dat
+This is a [.dat file](#dat).
+Contains overworld tilemaps.
+Basically contains every room you explore in the game.
+
+Every entry in this file looks to be RLZ compressed, except a few.
+Their IDs are in a [table below](#non-rlz-compressed-files).
+
+#### Not known
+While we can render MOST maps with no problems, we are still far from figuring this all out.
+Here is a list of things we haven't figured out yet:
+* NPC data
+* Map collision data
+* Tilemap animations
+* Tilemap layer transparency
+  * Orange tint in Baby Bowser's Castle
+  * Beams of light in Gritzy Desert Caves
+  * Center mushroom before Hollijolli Village
+  * Various light sources
+
+#### FMapInfo lookup table
+To decode the tilemaps of a FMap, you need 5 files from `FMapData.dat`:
+* Layer 0 tileset
+* Layer 1 tileset
+* Layer 2 tileset
+* Bundle file
+* Unknown
+
+The files in `FMapData.dat` are stored in no particular order, but a lookup table of file pairings is embedded somewhere within the ARM9 binary (yes, really).
+Where exactly it is located differs from region to region, and probably bewteen versions as well.
+To find it, open the ARM9 binary in a hex editor, and search for the following sequence of bytes:
+```
+00 00 00 00   01 00 00 00   02 00 00 00   03 00 00 00
+```
+Those are the bytes at the start of the table.
+
+The lookup itself has 638 entries, and each entry looks like this:
+```C
+struct FMapInfo {
+    0x00:  u32,    Layer 0 tilemap file ID
+    0x04:  u32,    Layer 1 tilemap file ID
+    0x08:  u32,    Layer 2 tilemap file ID
+    0x0C:  u32,    Bundle file ID
+    0x10:  u32,    Unknown file ID
+}
+```
+If a file ID is equal to `0xFFFF_FFFF`, that means a `null` pointer.
+Some rooms don't use all 3 layers, so the tilemap pointers may be blank.
+The bundle file ID is never `null`.
+
+#### FMap bundle file
+The bundle file is itself a RLZ compressed [.dat file](#dat).
+Bundle files are made up of 13 (uncompressed) files:
+* 0-2 are tilemaps, one for each layer (may be empty)
+* 3-5 are palettes, one for each layer (may be empty)
+* 6 contains metadata:
+```C
+struct FMapMetadata {
+    0x00:   u16,    map_width   // in tiles
+    0x02:   u16,    map_height  // in tiles
+    0x04:   u8,     _           // unknown (usually 0xFF?)
+    0x05:   u8,     layer_info  // Lower 3 bits determine bit-depth
+                                // of each layers tileset
+                                // (0 = 4BPP, 1 = 8BPP)
+                                // The rest are unknown
+    0x06:   [6]u8,  _           // Unknown (usually all 0)
+}
+```
+* 7-9 might be tilemap animation? (may be empty)
+* 10-12 are unknown
+
+#### non-RLZ compressed files
+It is unknown exactly what is in these files.
+```
+87
+119
+186
+417
+422
+693
+853
+860
+863
+865
+869
+874
+938
+947
+980
+985
+993
+1061
+1110
+1127
+1192
+1446
+1456
+1464
+1466
+1476
+1502
+1669
+1735
+1780
+1813
+1814
+1821
+1972
+2851
+```
+
+
 
 ### MenuDat.dat
 This is a [.dat file](#dat).

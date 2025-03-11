@@ -2,10 +2,13 @@ package pit
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 )
+
+var ErrNotDat = errors.New("invalid .dat archive")
 
 // Open a dat file from a reader
 func OpenDat(r io.ReaderAt, index int) (*io.SectionReader, error) {

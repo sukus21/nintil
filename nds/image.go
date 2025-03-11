@@ -176,18 +176,22 @@ func DrawTileSamePalette(canvas *image.Paletted, tile *Tile, x int, y int, mirro
 
 // Same as DrawTileSamePalette, but can shift palettes
 func DrawTileShiftPalette(canvas *image.Paletted, tile *Tile, x int, y int, mirror bool, flip bool, palshift int) {
-	for i := 0; i < 8; i++ {
+	for i := range 8 {
 		sx := i
 		if mirror {
 			sx = 7 - i
 		}
-		for j := 0; j < 8; j++ {
+		for j := range 8 {
 			sy := j
 			if flip {
 				sy = 7 - j
 			}
 			pix := tile.ColorIndexAt(sx, sy)
-			canvas.SetColorIndex(x+i, y+j, pix+byte(palshift))
+			if pix == 0 {
+				canvas.SetColorIndex(x+i, y+j, 0)
+			} else {
+				canvas.SetColorIndex(x+i, y+j, pix+byte(palshift))
+			}
 		}
 	}
 }
