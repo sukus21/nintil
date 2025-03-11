@@ -7,7 +7,7 @@ import (
 
 type rlzReader struct {
 	rewind    [0x1000]byte
-	rewindPos int
+	rewindPos uint32
 	buf       []byte
 	src       io.Reader
 	blocks    uint32
@@ -15,40 +15,22 @@ type rlzReader struct {
 }
 
 func NewReader(src io.Reader) (RLZReader, error) {
+	var err error
 	r := &rlzReader{
 		src: src,
 	}
 
 	// Get decompressed file size
-	h, err := r.readSrcByte()
+	r.size, err = r.readSrcVarint()
 	if err != nil {
 		return nil, err
-	}
-	r.size = uint32(h & 0x3F)
-	varlen := h >> 6
-	for i := 6; varlen > 0; i += 6 {
-		n, err := r.readSrcByte()
-		if err != nil {
-			return nil, err
-		}
-		r.size |= uint32(n) << i
-		varlen--
 	}
 
 	// Get block count
-	h, err = r.readSrcByte()
+	r.blocks, err = r.readSrcVarint()
+	r.blocks++
 	if err != nil {
 		return nil, err
-	}
-	r.blocks = uint32(h&0x3F) + 1
-	varlen = h >> 6
-	for i := 6; varlen > 0; i += 6 {
-		n, err := r.readSrcByte()
-		if err != nil {
-			return nil, err
-		}
-		r.blocks |= uint32(n) << i
-		varlen--
 	}
 
 	return r, nil
@@ -62,13 +44,32 @@ func (r *rlzReader) readSrcByte() (byte, error) {
 	return instb[0], nil
 }
 
+func (r *rlzReader) readSrcVarint() (uint32, error) {
+	h, err := r.readSrcByte()
+	if err != nil {
+		return 0, err
+	}
+	num := uint32(h & 0x3F)
+	varlen := h >> 6
+	for i := 6; varlen > 0; i += 6 {
+		operand, err := r.readSrcByte()
+		if err != nil {
+			return 0, err
+		}
+		num |= uint32(operand) << i
+		varlen--
+	}
+
+	return num, nil
+}
+
 func (r *rlzReader) readBuffered(buf []byte) (int, error) {
 	n := copy(buf, r.buf)
 	r.buf = r.buf[n:]
 	return n, nil
 }
 
-func (r *rlzReader) getRewind(offset int) byte {
+func (r *rlzReader) getRewind(offset uint32) byte {
 	pos := (r.rewindPos - offset) & 0x0FFF
 	return r.rewind[pos]
 }
@@ -113,7 +114,7 @@ func (r *rlzReader) decompress() error {
 				rewindCount := 2 + uint32(operand&0x0F)
 				rewindOffset := uint32(rewindBase) + uint32(operand&0xF0)<<4
 				for i := uint32(0); i < rewindCount; i++ {
-					r.appendData(r.getRewind(int(rewindOffset)))
+					r.appendData(r.getRewind(rewindOffset))
 				}
 
 			// Run-length encoding
@@ -138,7 +139,11 @@ func (r *rlzReader) Read(buf []byte) (int, error) {
 
 	// No more blocks?
 	if r.blocks == 0 {
-		return 0, io.EOF
+		if r.rewindPos == r.size {
+			return 0, io.EOF
+		} else {
+			return 0, io.ErrUnexpectedEOF
+		}
 	}
 
 	// Allocate new buffer
