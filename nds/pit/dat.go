@@ -13,10 +13,13 @@ func OpenDat(r io.ReaderAt, index int) (*io.SectionReader, error) {
 	if _, err := r.ReadAt(buf[:], int64(index)*4); err != nil {
 		return nil, err
 	}
+
+	start := binary.LittleEndian.Uint32(buf[:])
+	end := binary.LittleEndian.Uint32(buf[4:])
 	return io.NewSectionReader(
 		r,
-		int64(binary.LittleEndian.Uint32(buf[:])),
-		int64(binary.LittleEndian.Uint32(buf[4:])),
+		int64(start),
+		int64(end-start),
 	), nil
 }
 
