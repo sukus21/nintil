@@ -90,7 +90,7 @@ Contains documentation for all (known) Partners in Time file formats.
 * Title
     * TitleBG.dat
 * Treasure
-    * TreasureInfo.dat
+    * [TreasureInfo.dat](#treasureinfodat)
 
 ## Lanugage order
 Languages always come in this order:
@@ -531,12 +531,12 @@ Here is a list of things we haven't figured out yet:
   * Various light sources
 
 #### FMapInfo lookup table
-To decode the tilemaps of a FMap, you need 5 files from `FMapData.dat`:
+To decode the tilemaps of a FMap, you need 4 files:
 * Layer 0 tileset
 * Layer 1 tileset
 * Layer 2 tileset
-* Bundle file
-* Unknown
+* Bundle file (tilemap, palettes, bounds, etc.)
+* Treasure info
 
 The files in `FMapData.dat` are stored in no particular order, but a lookup table of file pairings is embedded somewhere within the ARM9 binary (yes, really).
 Where exactly it is located differs from region to region, and probably bewteen versions as well.
@@ -549,16 +549,24 @@ Those are the bytes at the start of the table.
 The lookup itself has 638 entries, and each entry looks like this:
 ```C
 struct FMapInfo {
-    0x00:  u32,    Layer 0 tilemap file ID
-    0x04:  u32,    Layer 1 tilemap file ID
-    0x08:  u32,    Layer 2 tilemap file ID
-    0x0C:  u32,    Bundle file ID
-    0x10:  u32,    Unknown file ID
+    // IDs of tileset files.
+    // Files are located in FMapData.dat.
+    // A value of 0xFFFF_FFFF means layer is unused.
+    0x00:   [3]u32, tileset_file_id
+
+    // ID of bundle file.
+    // File is located in FMapData.dat.
+    // This value is never 0xFFFF_FFFF.
+    0x0C:   u32,    bundle_file_id
+
+    // ID for treasure file.
+    // File is located in TreasureInfo.dat.
+    // A value of 0xFFFF_FFFF means no treasure in this room.
+    0x10:   u32,    treasure_file_id
 }
 ```
-If a file ID is equal to `0xFFFF_FFFF`, that means a `null` pointer.
-Some rooms don't use all 3 layers, so the tilemap pointers may be blank.
-The bundle file ID is never `null`.
+
+The optional treasure file is documented [here](#treasureinfodat).
 
 #### FMap bundle file
 The bundle file is itself a RLZ compressed [.dat file](#dat).
@@ -568,14 +576,21 @@ Bundle files are made up of 13 (uncompressed) files:
 * 6 contains metadata:
 ```C
 struct FMapMetadata {
-    0x00:   u16,    map_width   // in tiles
-    0x02:   u16,    map_height  // in tiles
-    0x04:   u8,     _           // unknown (usually 0xFF?)
-    0x05:   u8,     layer_info  // Lower 3 bits determine bit-depth
-                                // of each layers tileset
-                                // (0 = 4BPP, 1 = 8BPP)
-                                // The rest are unknown
-    0x06:   [6]u8,  _           // Unknown (usually all 0)
+    // Width and height in tiles
+    0x00:   u16,    map_width
+    0x02:   u16,    map_height
+
+    // unknown, but usually 0xFF
+    0x04:   u8,     _
+
+    // Lower 3 bits determine bit-depth
+    // of each layers tileset
+    // (0 = 4BPP, 1 = 8BPP)
+    // The rest are unknown
+    0x05:   u8,     layer_info  
+    
+    // Unknown (usually all 0)
+    0x06:   [6]u8,  _
 }
 ```
 * 7-9 might be tilemap animation? (may be empty)
@@ -845,3 +860,27 @@ The tilemap goes from left-to-right, row by row.
 The palette is not compressed.
 The colors are stored in RGB555 format.
 The first color of every palette is ignored, as it is treated as transparent.
+
+### TreasureInfo.dat
+This is a [.dat file](#dat).
+
+Each file contains an array of "treasure" to be collected on a map.
+Known types of treasure are beans and item blocks with coins, items and gear.
+It is unknown how many types of treasure there are, and their exact data.
+
+To determine which map a treasure file belongs to, see the [FMapInfoInfo lookup table](#fmapinfo-lookup-table).
+
+Each treasure looks like this:
+```C
+struct TreasureInfo {
+    0x00:   u16,    type        // Exact types are unknown
+    0x02:   u16,    contents    // Depends on the type
+    0x04:   u16,    id          // Unique treasure ID
+    0x06:   u16,    pos_x
+    0x08:   u16,    pos_y
+    0x0A:   u16,    pos_z       // This is the up/down axis
+}
+```
+
+Currently not known if there's a setting in the [FMap bundle](#fmap-bundle-file), determining how many treasures are on a map.
+Maybe it just looks at the size of the .dat and divides by `0x0A`?
