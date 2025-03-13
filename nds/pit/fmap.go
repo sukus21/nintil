@@ -17,7 +17,7 @@ import (
 type FMapInfo struct {
 	Tilesets [3]uint32
 	Bundle   uint32
-	Unknown  uint32
+	Treasure uint32
 }
 
 // Information about the given map.
