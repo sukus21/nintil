@@ -873,7 +873,8 @@ To determine which map a treasure file belongs to, see the [FMapInfoInfo lookup 
 Each treasure looks like this:
 ```C
 struct TreasureInfo {
-    0x00:   u16,    type        // Exact types are unknown
+    0x00:   u8,     type
+    0x01:   u8,     subtype
     0x02:   u16,    contents    // Depends on the type
     0x04:   u16,    id          // Unique treasure ID
     0x06:   u16,    pos_x
@@ -882,5 +883,19 @@ struct TreasureInfo {
 }
 ```
 
-Currently not known if there's a setting in the [FMap bundle](#fmap-bundle-file), determining how many treasures are on a map.
-Maybe it just looks at the size of the .dat and divides by `0x0A`?
+Currently not known if there's a setting in the [FMap bundle](#fmap-bundle-file) determining how many treasures are on a map.
+Maybe it just looks at the size of the treasure file and divides by `0x0A` to get the number of entries?
+
+#### Treasure types
+This list has a long way to go.
+The current documentation process involves going into a hex editor, changing some values, reloading the ROM and observing the result.
+Before I document more of this, I really need to develop a tool to re-compile maps.
+
+* **type 0x0A:** Mario question block with items
+* **type 0x0B:** Mario question block with coins
+* **type 0x0C:** Luigi question block with items
+* **type 0x0D:** Luigi question block with coins
+* **type 0x0E:** question block with item
+* **type 0x0F:** question block with coins. The content is always `0xFFFF`, all other values seem to crash the game. The top 3 bits of the subtype are ignored. The coin in the box is worth the value of the subtype field (after clearing the top 3 bits) plus one, with these exceptions:
+  * **subtype 0x01:** single 10-coin
+  * **subtype 0x02:** single 20-coin
