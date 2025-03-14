@@ -2,13 +2,16 @@ package pit
 
 import (
 	"bytes"
+	"encoding/binary"
 	"errors"
 	"image"
 	"image/draw"
 	"io"
+	"slices"
 
 	"github.com/sukus21/nintil/compression/rlz"
 	"github.com/sukus21/nintil/nds"
+	"github.com/sukus21/nintil/util"
 	"github.com/sukus21/nintil/util/ezbin"
 )
 
@@ -49,8 +52,9 @@ type FMapMetadata struct {
 
 // Implementation of FMapReader
 type FMapReader struct {
-	fmapInfo []FMapInfo
-	fmapFile io.ReaderAt
+	fmapInfo     []FMapInfo
+	fmapFile     io.ReaderAt
+	treasureFile io.ReaderAt
 }
 
 // The given FMapInfo blob is invalid
@@ -62,8 +66,9 @@ var ErrInvalidFMapBundle = errors.New("FMap: invalid FMap bundle file")
 // fmapInfoBlock is the block stored somewhere in the ARM9 binary.
 // It's super annoying that it's not stored in the NitroFS, but what can we do...
 //
-// fmapFile is the "FMap/FMapData.dat" file
-func NewFMapReader(fmapInfoBlock []byte, fmapFile io.ReaderAt) (*FMapReader, error) {
+// fmapFile is the "FMap/FMapData.dat" file.
+// treasureFile is the "Treasure/TreasureInfo.dat" file.
+func NewFMapReader(fmapInfoBlock []byte, fmapFile io.ReadSeeker, treasureFile io.ReadSeeker) (*FMapReader, error) {
 	if len(fmapInfoBlock)%(5*4) != 0 {
 		return nil, ErrInvalidFMapInfo
 	}
@@ -78,9 +83,43 @@ func NewFMapReader(fmapInfoBlock []byte, fmapFile io.ReaderAt) (*FMapReader, err
 
 	// Return reader
 	return &FMapReader{
-		fmapInfo: fmapInfos,
-		fmapFile: fmapFile,
+		fmapInfo:     fmapInfos,
+		fmapFile:     util.NewReadAtSeeker(fmapFile),
+		treasureFile: util.NewReadAtSeeker(treasureFile),
 	}, nil
+}
+
+// This method only works with vanilla and lightly edited ROMs.
+// It SHOULD work with ROMs from all regions and all revisions though?
+// Only tested with the PAL version.
+func NewFMapReaderFromRom(rom *nds.Rom) (*FMapReader, error) {
+	fmapInfo := findFmapInfo(rom)
+	fmapFile, err := rom.Filesystem.Open("FMap/FMapData.dat")
+	if err != nil {
+		return nil, err
+	}
+	treasureFile, err := rom.Filesystem.Open("Treasure/TreasureInfo.dat")
+	if err != nil {
+		return nil, err
+	}
+
+	// Files from the NitroFS file system SHOULD always implement io.Seeker
+	return NewFMapReader(
+		fmapInfo,
+		fmapFile.(io.ReadSeeker),
+		treasureFile.(io.ReadSeeker),
+	)
+}
+
+func findFmapInfo(rom *nds.Rom) []byte {
+	size := 638 * 20
+	for i := range rom.Arm9Binary[:len(rom.Arm9Binary)-size] {
+		if slices.Equal([]byte{0, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0}, rom.Arm9Binary[i:i+16]) {
+			return rom.Arm9Binary[i : i+size]
+		}
+	}
+
+	panic("could not find the thing :(")
 }
 
 // Number of total maps
@@ -89,7 +128,7 @@ func (r *FMapReader) MapCount() int {
 }
 
 func (r *FMapReader) readFMapBundleDats(bundleFile uint32) ([][]byte, error) {
-	bundleData, err := r.decompressFile(bundleFile)
+	bundleData, err := openDatRlz(r.fmapFile, bundleFile)
 	if err != nil {
 		return nil, err
 	}
@@ -100,8 +139,8 @@ func (r *FMapReader) readFMapBundleDats(bundleFile uint32) ([][]byte, error) {
 	return UnpackDat(bundleData), nil
 }
 
-func (r *FMapReader) decompressFile(fileId uint32) ([]byte, error) {
-	fileReader, err := OpenDat(r.fmapFile, int(fileId))
+func openDatRlz(ra io.ReaderAt, fileId uint32) ([]byte, error) {
+	fileReader, err := OpenDat(ra, int(fileId))
 	if err != nil {
 		return nil, err
 	}
@@ -119,7 +158,7 @@ func (r *FMapReader) decompressFile(fileId uint32) ([]byte, error) {
 	return content, nil
 }
 
-func (r *FMapReader) NewRenderer(mapId int) (*FMapRenderer, error) {
+func (r *FMapReader) OpenMap(mapId int) (*FMapMap, error) {
 	info := r.fmapInfo[mapId]
 
 	// Open bundle file
@@ -135,23 +174,49 @@ func (r *FMapReader) NewRenderer(mapId int) (*FMapRenderer, error) {
 	bundle.Metadata = ezbin.ReadSingle[FMapMetadata](bytes.NewReader(bundleData[6]))
 	copy(bundle.Unknown[:], bundleData[7:])
 
+	// Read treasure
+	treasures := []TreasureInfo{}
+	if info.Treasure != 0xFFFF_FFFF {
+		dat, err := OpenDat(r.treasureFile, int(info.Treasure))
+		if err != nil {
+			return nil, err
+		}
+
+		treasures = make([]TreasureInfo, int(dat.Size()/12))
+		for i := range treasures {
+			if err := binary.Read(dat, binary.LittleEndian, &treasures[i]); err != nil {
+				return nil, err
+			}
+		}
+	}
+
 	// Return renderer
-	return &FMapRenderer{
-		r:      r,
-		Info:   info,
-		Bundle: bundle,
+	return &FMapMap{
+		r:        r,
+		Info:     info,
+		Bundle:   bundle,
+		Treasure: treasures,
 	}, nil
 }
 
-type FMapRenderer struct {
+type TreasureInfo struct {
+	Type     uint8
+	Subtype  uint8
+	Contents uint16
+	Id       uint16
+	X, Y, Z  uint16
+}
+
+type FMapMap struct {
 	r          *FMapReader
 	Info       FMapInfo
 	Bundle     FMapBundle
+	Treasure   []TreasureInfo
 	layerCache [3]*image.Paletted
 }
 
 // Renders the full tilemap, with all 3 layers.
-func (r *FMapRenderer) RenderMap() (image.Image, error) {
+func (r *FMapMap) RenderMap() (image.Image, error) {
 	// Read room width and height
 	width := int(r.Bundle.Metadata.Width)
 	height := int(r.Bundle.Metadata.Height)
@@ -177,7 +242,7 @@ func (r *FMapRenderer) RenderMap() (image.Image, error) {
 
 // Renders a single layer.
 // Output image may not be valid, is the layer does not exist (use HasLayer).
-func (r *FMapRenderer) RenderLayer(layerId int) (image.Image, error) {
+func (r *FMapMap) RenderLayer(layerId int) (image.Image, error) {
 	if r.layerCache[layerId] != nil {
 		return r.layerCache[layerId], nil
 	}
@@ -196,7 +261,7 @@ func (r *FMapRenderer) RenderLayer(layerId int) (image.Image, error) {
 
 	// Read tileset
 	var tileset []*nds.Tile
-	tilesetBytes, err := r.r.decompressFile(r.Info.Tilesets[layerId])
+	tilesetBytes, err := openDatRlz(r.r.fmapFile, r.Info.Tilesets[layerId])
 	if err != nil {
 		return nil, err
 	}
@@ -234,7 +299,8 @@ func (r *FMapRenderer) RenderLayer(layerId int) (image.Image, error) {
 	return img, nil
 }
 
-func (r *FMapRenderer) HasLayer(layerId int) bool {
+// Test if a given layer is used in this map.
+func (r *FMapMap) HasLayer(layerId int) bool {
 	if layerId < 0 || layerId > 2 {
 		return false
 	}

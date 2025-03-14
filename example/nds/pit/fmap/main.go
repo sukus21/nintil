@@ -1,13 +1,11 @@
 package main
 
 import (
-	"bytes"
+	"encoding/json"
 	"fmt"
 	"image"
 	"image/png"
-	"io"
 	"os"
-	"slices"
 
 	"github.com/sukus21/nintil/nds"
 	"github.com/sukus21/nintil/nds/pit"
@@ -20,66 +18,67 @@ func main() {
 		return
 	}
 
-	// Open ROM file
+	// Open ROM file and create reader
 	romFile := util.Must1(os.Open(os.Args[1]))
 	rom := util.Must1(nds.OpenROM(romFile))
+	fmapReader := util.Must1(pit.NewFMapReaderFromRom(rom))
 
-	// Find FMapInfo
-	fmapInfo := findFmapInfo(rom)
-	fmapFile := util.Must1(rom.Filesystem.Open("FMap/FMapData.dat"))
-	fmapReader := util.Must1(pit.NewFMapReader(fmapInfo, bytes.NewReader(util.Must1(io.ReadAll(fmapFile)))))
+	// Remove previous export
+	os.RemoveAll("_FMap")
+	os.Mkdir("_FMap", os.ModePerm)
 
+	// Export all maps
 	for i := range fmapReader.MapCount() {
-		os.RemoveAll(fmt.Sprintf("FMap_%d.png", i))
-	}
-
-	for i := range fmapReader.MapCount() {
+		fmt.Println("exporting FMap", i, "...")
 		if err := RenderMap(fmapReader, i); err != nil {
 			fmt.Println(err)
 		}
 	}
-}
 
-func findFmapInfo(rom *nds.Rom) []byte {
-	size := 638 * 20
-	for i := range rom.Arm9Binary[:len(rom.Arm9Binary)-size] {
-		if slices.Equal([]byte{0, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0}, rom.Arm9Binary[i:i+16]) {
-			return rom.Arm9Binary[i : i+size]
-		}
-	}
-
-	panic("could not find the thing :(")
+	fmt.Println("done!")
 }
 
 func RenderMap(fmapReader *pit.FMapReader, mapId int) error {
-	// Create renderer
-	renderer, err := fmapReader.NewRenderer(mapId)
+	// Create fmap
+	fmap, err := fmapReader.OpenMap(mapId)
 	if err != nil {
 		return err
 	}
 
 	// Render the full map
-	img, err := renderer.RenderMap()
+	img, err := fmap.RenderMap()
 	if err != nil {
 		return err
 	}
-	err = exportImage(img, fmt.Sprintf("FMap_%d.png", mapId))
-	if err != nil {
+	if err := exportImage(img, fmt.Sprintf("_FMap/FMap_%d.png", mapId)); err != nil {
+		return err
+	}
+	if err := os.Mkdir(fmt.Sprintf("_FMap/FMap_%d", mapId), os.ModePerm); err != nil {
 		return err
 	}
 
 	// Render layers
 	for i := range 3 {
-		if renderer.HasLayer(i) {
-			img, err := renderer.RenderLayer(i)
+		if fmap.HasLayer(i) {
+			img, err := fmap.RenderLayer(i)
 			if err != nil {
 				return err
 			}
-			err = exportImage(img, fmt.Sprintf("FMap_%d_%d.png", mapId, i))
+			err = exportImage(img, fmt.Sprintf("_FMap/FMap_%d/layer_%d.png", mapId, i))
 			if err != nil {
 				return err
 			}
 		}
+	}
+
+	// Dump metadata
+	metadata, _ := json.MarshalIndent(fmap.Bundle.Metadata, "", "    ")
+	os.WriteFile(fmt.Sprintf("_FMap/FMap_%d/metadata.json", mapId), metadata, os.ModePerm)
+
+	// Dump treasure info
+	if len(fmap.Treasure) != 0 {
+		treasure, _ := json.MarshalIndent(fmap.Treasure, "", "    ")
+		os.WriteFile(fmt.Sprintf("_FMap/FMap_%d/treasure.json", mapId), treasure, os.ModePerm)
 	}
 
 	// All good
