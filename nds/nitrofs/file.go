@@ -119,6 +119,25 @@ func (e *streamElement) Sys() any {
 	return e.fs
 }
 
+// ---------------------
+//
+//  Implement io.Seeker, io.ReaderAt
+//
+// ---------------------
+
+func (e *streamElement) Seek(offset int64, whence int) (int64, error) {
+	if e.r == nil {
+		return 0, fs.ErrClosed
+	}
+	return e.r.Seek(offset, whence)
+}
+func (e *streamElement) ReadAt(p []byte, off int64) (int, error) {
+	if e.r == nil {
+		return 0, fs.ErrClosed
+	}
+	return e.r.ReadAt(p, off)
+}
+
 // -------------------
 //
 // 	Other methods
