@@ -181,10 +181,14 @@ func DrawTileShiftPalette(canvas *image.Paletted, tile *Tile, x int, y int, mirr
 			}
 			pix := tile.ColorIndexAt(sx, sy)
 			if pix == 0 {
-				canvas.SetColorIndex(x+i, y+j, 0)
-			} else {
-				canvas.SetColorIndex(x+i, y+j, pix+byte(palshift))
+				_, _, _, a := canvas.Palette[0].RGBA()
+				if a == 0 {
+					canvas.SetColorIndex(x+i, y+j, 0)
+					continue
+				}
 			}
+
+			canvas.SetColorIndex(x+i, y+j, pix+byte(palshift))
 		}
 	}
 }
