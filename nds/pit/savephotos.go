@@ -2,13 +2,13 @@ package pit
 
 import (
 	"bytes"
+	"encoding/binary"
 	"image"
 	"io"
 
 	"github.com/sukus21/nintil/compression/lz10"
 	"github.com/sukus21/nintil/nds"
 	"github.com/sukus21/nintil/util"
-	"github.com/sukus21/nintil/util/ezbin"
 )
 
 func DecodeSavePhoto(rom *nds.Rom, id int) image.PalettedImage {
@@ -21,27 +21,7 @@ func DecodeSavePhoto(rom *nds.Rom, id int) image.PalettedImage {
 	palette := nds.DeserializePalette(UnpackDatSingle(b, id*3+2), true)
 
 	// Create new image
-	img := image.NewPaletted(
-		image.Rect(0, 0, 256, 192),
-		palette,
-	)
-
-	// Draw tiles onto image
-	for i := range 32 * 24 {
-		raw := ezbin.ReadSingle[uint16](tilemap)
-		tileId := raw & 0x3FF
-		tileMirror := raw&0x0400 != 0
-		tileFlip := raw&0x0800 != 0
-
-		tile := tiles[tileId]
-		x := (i & 0x1F) * 8
-		y := (i >> 5) * 8
-		nds.DrawTileSamePalette(
-			img, &tile,
-			x, y,
-			tileMirror, tileFlip,
-		)
-	}
-
+	img := nds.NewTilemap(32, 24, tiles, palette)
+	binary.Read(tilemap, binary.LittleEndian, img.Attributes)
 	return img
 }

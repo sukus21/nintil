@@ -14,9 +14,7 @@ import (
 
 	"github.com/sukus21/nintil/compression/lz10"
 	"github.com/sukus21/nintil/compression/rlz"
-	"github.com/sukus21/nintil/nds"
 	"github.com/sukus21/nintil/util"
-	"github.com/sukus21/nintil/util/ezbin"
 )
 
 type RunnerFunc func(r *Runner) any
@@ -305,39 +303,6 @@ func drawImgBitmap(w int, h int, t4bpp bool, gfx *bytes.Reader, pal color.Palett
 			x = 0
 			y++
 		}
-	}
-
-	return img
-}
-
-func drawImgTilemap(w int, h int, tls []nds.Tile, tlm *bytes.Reader, pal color.Palette) image.Image {
-	img := image.NewPaletted(
-		image.Rect(0, 0, w*8, h*8),
-		pal,
-	)
-
-	xt := 0
-	yt := 0
-	for i := 0; i < int(tlm.Size())/2 && yt < h; i++ {
-		raw := ezbin.ReadSingle[uint16](tlm)
-		tileId := raw & 0x3FF
-		tileMirror := raw&0x0400 != 0
-		tileFlip := raw&0x0800 != 0
-		// tilePal := int(raw >> 12)
-
-		tile := &tls[tileId]
-		x := xt * 8
-		y := yt * 8
-		xt++
-		if xt >= w {
-			xt = 0
-			yt++
-		}
-		nds.DrawTileSamePalette(
-			img, tile,
-			x, y,
-			tileMirror, tileFlip,
-		)
 	}
 
 	return img

@@ -7,6 +7,8 @@ import (
 	"image/color"
 	"image/draw"
 	"io"
+
+	"github.com/sukus21/nintil/util/ezbin"
 )
 
 // A single 8x8 tile
@@ -185,4 +187,128 @@ func DrawTileShiftPalette(canvas *image.Paletted, tile *Tile, x int, y int, mirr
 			}
 		}
 	}
+}
+
+// A bitfield, but can be used like a regular uint16.
+type TilemapAttributes uint16
+
+// Tile index
+func (attr TilemapAttributes) GetTileIndex() int {
+	return ezbin.Bitget[int](attr, 10, 0)
+}
+func (attr *TilemapAttributes) SetTileIndex(tileIndex int) {
+	*attr = ezbin.Bitset(*attr, tileIndex, 10, 0)
+}
+
+// If this tile should be mirrored or not
+func (attr TilemapAttributes) GetFlipX() bool {
+	return ezbin.BitgetFlag(attr, 10)
+}
+func (attr *TilemapAttributes) SetFlipX(flipX bool) {
+	*attr = ezbin.BitsetFlag(*attr, flipX, 10)
+}
+
+// If this tile should be flipped or not
+func (attr TilemapAttributes) GetFlipY() bool {
+	return ezbin.BitgetFlag(attr, 11)
+}
+func (attr *TilemapAttributes) SetFlipY(flipY bool) {
+	*attr = ezbin.BitsetFlag(*attr, flipY, 11)
+}
+
+// For 4bpp tiles, decide which set of 16 colors to use from a 256 color palette.
+// Value ranges from from 0 to 15.
+func (attr TilemapAttributes) GetPaletteShift() int {
+	return ezbin.Bitget[int](attr, 4, 12)
+}
+func (attr *TilemapAttributes) SetPaletteShift(paletteShift int) {
+	*attr = ezbin.Bitset(*attr, paletteShift, 4, 12)
+}
+
+// A tilemap.
+// Implements image.PalettedImage
+type Tilemap struct {
+	Palette    color.Palette
+	Tileset    []Tile
+	Attributes []TilemapAttributes
+
+	// Size in tiles
+	width, height int
+}
+
+func NewTilemap(width, height int, tileset []Tile, palette color.Palette) *Tilemap {
+	return &Tilemap{
+		Palette:    palette,
+		Tileset:    tileset,
+		width:      width,
+		height:     height,
+		Attributes: make([]TilemapAttributes, width*height),
+	}
+}
+
+func (tilemap *Tilemap) ColorModel() color.Model {
+	return tilemap.Palette[:min(256, len(tilemap.Palette))]
+}
+
+func (tilemap *Tilemap) Bounds() image.Rectangle {
+	return image.Rect(0, 0, tilemap.width*8, tilemap.height*8)
+}
+
+func (tilemap *Tilemap) At(x, y int) color.Color {
+	pixelX, pixelY, attributes := tilemap.getEntryAt(x, y)
+
+	// Get tile color
+	tile := &tilemap.Tileset[attributes.GetTileIndex()]
+	colorIndex := tile.ColorIndexAt(pixelX, pixelY)
+	if colorIndex == 0 {
+		_, _, _, a := tilemap.Palette[0].RGBA()
+		if a == 0 {
+			return color.Transparent
+		}
+	}
+
+	// Modify palette index
+	colorIndex += uint8(attributes.GetPaletteShift() * 16)
+	return tilemap.Palette[colorIndex]
+}
+
+func (tilemap *Tilemap) ColorIndexAt(x, y int) uint8 {
+	pixelX, pixelY, attributes := tilemap.getEntryAt(x, y)
+
+	// Get tile color
+	tile := &tilemap.Tileset[attributes.GetTileIndex()]
+	colorIndex := tile.ColorIndexAt(pixelX, pixelY)
+	if colorIndex == 0 {
+		return 0
+	}
+
+	// Modify palette index
+	return colorIndex + uint8(attributes.GetPaletteShift()*16)
+}
+
+func (tilemap *Tilemap) getEntryAt(x, y int) (int, int, TilemapAttributes) {
+	// Get tilemap entry
+	tileX := x / 8
+	tileY := y / 8
+	attributes := tilemap.Attributes[tileY*tilemap.width+tileX]
+
+	// Get tile pixel
+	pixelX := x % 8
+	if attributes.GetFlipX() {
+		pixelX = 7 - pixelX
+	}
+	pixelY := y % 8
+	if attributes.GetFlipY() {
+		pixelY = 7 - pixelY
+	}
+
+	return pixelX, pixelY, attributes
+}
+
+func (tilemap *Tilemap) GetAttributes(x, y int) TilemapAttributes {
+	return tilemap.Attributes[x+y*tilemap.width]
+}
+
+func (tilemap *Tilemap) SetAttributes(x, y int, attributes TilemapAttributes) {
+	tilemap.Attributes[x+y*tilemap.width] = attributes
 }

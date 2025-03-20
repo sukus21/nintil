@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	if len(os.Args) < 2 {
+	if len(os.Args) != 2 {
 		fmt.Println("usage:", os.Args[0], "<PiT ROM path>")
 		return
 	}
@@ -20,8 +20,8 @@ func main() {
 	defer f.Close()
 	rom := util.Must1(nds.OpenROM(f))
 
-	util.Must(os.MkdirAll("savephoto", os.ModePerm))
-	for i := 0; i < 10; i++ {
+	util.Must(os.MkdirAll("savephotos", os.ModePerm))
+	for i := range 10 {
 		img := pit.DecodeSavePhoto(rom, i)
 		ipath := fmt.Sprintf("savephotos/%d.png", i)
 		outf := util.Must1(os.Create(ipath))

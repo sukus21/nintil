@@ -1,13 +1,15 @@
 package main
 
 import (
+	"encoding/binary"
 	"fmt"
-	"io"
-	"io/fs"
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
 
+	"github.com/sukus21/nintil/compression/lz10"
+	"github.com/sukus21/nintil/compression/rlz"
 	"github.com/sukus21/nintil/nds"
 	"github.com/sukus21/nintil/nds/pit"
 	"github.com/sukus21/nintil/util"
@@ -22,37 +24,30 @@ func main() {
 	defer f.Close()
 	rom := util.Must1(nds.OpenROM(f))
 
-	// Dump NitroFS filesystem
-	util.Must(fs.WalkDir(rom.Filesystem, ".", func(path string, d fs.DirEntry, err error) error {
-		if err != nil || d.IsDir() {
-			return err
+	// Dump ARM9 binary in the stupidest way probably
+	fout := util.Must1(os.Create("arm9.s"))
+	defer fout.Close()
+	for i := 0; i < len(rom.Arm9Binary); i += 4 {
+		fmt.Fprintf(fout, "    .word 0x%08X\n", binary.LittleEndian.Uint32(rom.Arm9Binary[i:]))
+	}
+}
+
+func writeFile(fname string, content []byte) error {
+	if pit.IsDat(content) {
+		util.Must(os.MkdirAll(fname, os.ModePerm))
+		for i, content := range pit.UnpackDat(content) {
+			outPath := filepath.Join(fname, strconv.Itoa(i))
+			util.Must(writeFile(outPath, content))
 		}
-
-		// Create directory for file
-		outPath := filepath.Join("nitrofs", path)
-		dname := filepath.Dir(outPath)
-		util.Must(os.MkdirAll(dname, os.ModePerm))
-
-		// Read file contents
-		nitroFile := util.Must1(rom.Filesystem.Open(path))
-		fileContent := util.Must1(io.ReadAll(nitroFile))
-		nitroFile.Close()
-
-		// Just dump regular files
-		if filepath.Ext(path) != ".dat" || !pit.IsDat(fileContent) {
-			util.Must(os.WriteFile(outPath, fileContent, os.ModePerm))
-			return nil
-		}
-
-		// .dat file, NOW we are cooking!
-		datPath := outPath
-		util.Must(os.Mkdir(datPath, os.ModePerm))
-		for i, content := range pit.UnpackDat(fileContent) {
-			outPath := filepath.Join(datPath, fmt.Sprintf("%d", i))
-			util.Must(os.WriteFile(outPath, content, os.ModePerm))
-		}
-
-		// Yup, all good
 		return nil
-	}))
+	}
+
+	if decomp, err := rlz.Decompress(content); err == nil {
+		return os.WriteFile(fname+".rlz", decomp, os.ModePerm)
+	}
+	if decomp, err := lz10.Decompress(content); err == nil {
+		return os.WriteFile(fname+".lz10", decomp, os.ModePerm)
+	}
+
+	return os.WriteFile(fname, content, os.ModePerm)
 }

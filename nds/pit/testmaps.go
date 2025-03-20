@@ -1,10 +1,10 @@
 package pit
 
 import (
+	"bytes"
 	"encoding/binary"
 	"image"
 	"io"
-	"math/bits"
 
 	"github.com/sukus21/nintil/compression/rlz"
 	"github.com/sukus21/nintil/nds"
@@ -21,36 +21,9 @@ func DecodeDebugMap(rom *nds.Rom, set int) image.PalettedImage {
 	tiles := nds.DeserializeTiles8BPP(tileData)
 	palette := nds.DeserializePalette(dat[set*3+0], true)
 
-	// Construct image
-	imageWidth := 512
-	mapWidth := imageWidth / 8
-	imageHeight := len(tlm) / mapWidth * 4
-	img := image.NewPaletted(
-		image.Rect(0, 0, imageWidth, imageHeight),
-		palette,
-	)
-
-	// Read tiles
-	for i := 0; i < len(tlm); i += 2 {
-		raw := binary.LittleEndian.Uint16(tlm[i : i+2])
-		tileId := raw & 0x03FF
-		tileMirror := raw&0x0400 != 0
-		tileFlip := raw&0x0800 != 0
-
-		tile := &tiles[tileId]
-
-		mask := mapWidth - 1
-		x := ((i / 2) & (mask)) * 8
-		y := ((i / 2) >> bits.OnesCount(uint(mask))) * 8
-		nds.DrawTileSamePalette(
-			img,
-			tile,
-			x,
-			y,
-			tileMirror,
-			tileFlip,
-		)
-	}
-
+	// Build tilemap and return
+	mapWidth := 64
+	img := nds.NewTilemap(mapWidth, len(tlm)/mapWidth*2, tiles, palette)
+	binary.Read(bytes.NewReader(tlm), binary.LittleEndian, img.Attributes)
 	return img
 }

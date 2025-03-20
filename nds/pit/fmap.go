@@ -212,7 +212,7 @@ type FMapMap struct {
 	Info       FMapInfo
 	Bundle     FMapBundle
 	Treasure   []TreasureInfo
-	layerCache [3]*image.Paletted
+	layerCache [3]*nds.Tilemap
 }
 
 // Renders the full tilemap, with all 3 layers.
@@ -242,7 +242,7 @@ func (r *FMapMap) RenderMap() (image.Image, error) {
 
 // Renders a single layer.
 // Output image may not be valid, is the layer does not exist (use HasLayer).
-func (r *FMapMap) RenderLayer(layerId int) (image.Image, error) {
+func (r *FMapMap) RenderLayer(layerId int) (image.PalettedImage, error) {
 	if r.layerCache[layerId] != nil {
 		return r.layerCache[layerId], nil
 	}
@@ -250,14 +250,12 @@ func (r *FMapMap) RenderLayer(layerId int) (image.Image, error) {
 	// Read room width and height
 	width := int(r.Bundle.Metadata.Width)
 	height := int(r.Bundle.Metadata.Height)
-	imgRect := image.Rect(0, 0, width*8, height*8)
 
-	// Read palette and create image
+	// Read palette
 	palette := nds.DeserializePalette(r.Bundle.Palettes[layerId], layerId != 2)
 	if len(palette) > 256 {
 		palette = palette[:256]
 	}
-	img := image.NewPaletted(imgRect, palette)
 
 	// Read tileset
 	var tileset []nds.Tile
@@ -274,25 +272,9 @@ func (r *FMapMap) RenderLayer(layerId int) (image.Image, error) {
 		tileset = nds.DeserializeTiles8BPP(tilesetBytes)
 	}
 
-	// Render tiles to image
-	tlm := bytes.NewReader(r.Bundle.Tilemaps[layerId])
-	for j := 0; tlm.Len() != 0; j++ {
-		posX := j % width
-		posY := j / width
-
-		// Get properties and draw tile
-		tileData := ezbin.ReadSingle[uint16](tlm)
-		flipX := tileData&(1<<10) != 0
-		flipY := tileData&(1<<11) != 0
-		paletteShift := tileData >> 12
-		tileId := tileData & (0x3FF)
-		nds.DrawTileShiftPalette(
-			img, &tileset[tileId],
-			posX*8, posY*8,
-			flipX, flipY,
-			int(paletteShift)*16,
-		)
-	}
+	// Create tilemap image
+	img := nds.NewTilemap(width, height, tileset, palette)
+	binary.Read(bytes.NewReader(r.Bundle.Tilemaps[layerId]), binary.LittleEndian, img.Attributes)
 
 	// All done
 	r.layerCache[layerId] = img

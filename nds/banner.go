@@ -147,7 +147,7 @@ func SerializeIcon(src image.Image) ([]byte, image.PalettedImage, error) {
 	tiles := make([]Tile, 16)
 	for i := range tiles {
 		t := &tiles[i]
-		for j := 0; j < 64; j++ {
+		for j := range 64 {
 			x := 8*(i&3) + (j & 7)
 			y := 8*(i>>2) + (j >> 3)
 			if !isPaletted {
@@ -228,12 +228,10 @@ func OpenBanner(r io.Reader) (*banner, error) {
 	tiles := DeserializeTiles4BPP(tilesRaw)
 
 	// Turn into one big image
-	icon := image.NewPaletted(image.Rect(0, 0, 32, 32), palette)
+	icon := NewTilemap(4, 4, tiles, palette)
 	b.icon = icon
-	for i := range tiles {
-		x := (i & 3) * 8
-		y := (i >> 2) * 8
-		DrawTileSamePalette(icon, &tiles[i], x, y, false, false)
+	for i := range icon.Attributes {
+		icon.Attributes[i] = TilemapAttributes(i)
 	}
 
 	// Read titles

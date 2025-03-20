@@ -7,6 +7,7 @@ import (
 	"image"
 	"io"
 	"os"
+	"path/filepath"
 
 	"github.com/sukus21/nintil/nds"
 	"github.com/sukus21/nintil/nds/pit"
@@ -45,15 +46,14 @@ func addNdsFuncs(r *Runner) {
 
 	// Explain whats here at given ROM address
 	// - uint32				address
-	// + string
 	r.AddFunc("here", func(r *Runner) any {
 		addr := ReadArg[uint32](r)
 		rom := ReadVar[*nds.Rom](r, "nds")
 		entry := rom.WhatsHere(addr)
 		if entry == nil {
-			return "address not mapped"
+			fmt.Println("address not mapped")
 		} else {
-			return fmt.Sprintf(
+			fmt.Printf(
 				"%s [0x%X] [0x%X - 0x%X]\n",
 				entry.Name(),
 				addr-entry.From(),
@@ -61,6 +61,7 @@ func addNdsFuncs(r *Runner) {
 				entry.From()+entry.To(),
 			)
 		}
+		return nil
 	})
 
 	// Opens a .dat entry from memory
@@ -84,10 +85,37 @@ func addNdsFuncs(r *Runner) {
 
 	// Opens a .dat entry
 	// - int				index
+	// + []byte
 	r.AddFunc("dat", func(r *Runner) any {
 		index := ReadArg[int](r)
 		dat := ReadVar[[][]byte](r, "dat_open")
 		return dat[index]
+	})
+
+	// Get number of entries in a .dat
+	r.AddFunc("dat_len", func(r *Runner) any {
+		dat := ReadVar[[][]byte](r, "dat_open")
+		fmt.Println(len(dat))
+		return nil
+	})
+
+	// Dump a .dat archive completely
+	// - string				number of folder to dump to
+	r.AddFunc("dat_dump", func(r *Runner) any {
+		dat := ReadVar[[][]byte](r, "dat_open")
+		fname := ReadArg[string](r)
+		os.MkdirAll(fname, os.ModePerm)
+		_, basename := filepath.Split(fname)
+		for i := range dat {
+			os.WriteFile(
+				filepath.Join(fname, fmt.Sprintf("%s_%d.bin", basename, i)),
+				dat[i],
+				os.ModePerm,
+			)
+		}
+
+		fmt.Println(".dat dumped")
+		return nil
 	})
 
 	// Get bitmap image from data
@@ -131,7 +159,9 @@ func addNdsFuncs(r *Runner) {
 			panic("unknown bitdepth for timemap, only 4 and 8 supported")
 		}
 
-		return drawImgTilemap(w, h, tls, tlm, pal)
+		img := nds.NewTilemap(w, h, tls, pal)
+		binary.Read(tlm, binary.LittleEndian, img.Attributes)
+		return img
 	})
 
 	// Get tilemap image from data
@@ -162,10 +192,12 @@ func addNdsFuncs(r *Runner) {
 		for i := range tls {
 			binary.LittleEndian.PutUint16(tlmbuf[i*2:], uint16(i))
 		}
+		tlm := bytes.NewReader(tlmbuf)
 
 		// Yup, do thing
-		tlm := bytes.NewReader(tlmbuf)
-		return drawImgTilemap(w, h, tls, tlm, pal)
+		img := nds.NewTilemap(w, h, tls, pal)
+		binary.Read(tlm, binary.LittleEndian, img.Attributes)
+		return img
 	})
 
 	// Exports a palette
