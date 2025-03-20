@@ -27,19 +27,17 @@ func DecodeSavePhoto(rom *nds.Rom, id int) image.PalettedImage {
 	)
 
 	// Draw tiles onto image
-	for i := 0; i < 32*24; i++ {
+	for i := range 32 * 24 {
 		raw := ezbin.ReadSingle[uint16](tilemap)
 		tileId := raw & 0x3FF
 		tileMirror := raw&0x0400 != 0
 		tileFlip := raw&0x0800 != 0
-		// tilePal := int(raw >> 12)
 
 		tile := tiles[tileId]
-		tile.Palette = palette
 		x := (i & 0x1F) * 8
 		y := (i >> 5) * 8
 		nds.DrawTileSamePalette(
-			img, tile,
+			img, &tile,
 			x, y,
 			tileMirror, tileFlip,
 		)

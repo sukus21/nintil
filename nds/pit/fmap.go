@@ -260,7 +260,7 @@ func (r *FMapMap) RenderLayer(layerId int) (image.Image, error) {
 	img := image.NewPaletted(imgRect, palette)
 
 	// Read tileset
-	var tileset []*nds.Tile
+	var tileset []nds.Tile
 	tilesetBytes, err := openDatRlz(r.r.fmapFile, r.Info.Tilesets[layerId])
 	if err != nil {
 		return nil, err
@@ -287,7 +287,7 @@ func (r *FMapMap) RenderLayer(layerId int) (image.Image, error) {
 		paletteShift := tileData >> 12
 		tileId := tileData & (0x3FF)
 		nds.DrawTileShiftPalette(
-			img, tileset[tileId],
+			img, &tileset[tileId],
 			posX*8, posY*8,
 			flipX, flipY,
 			int(paletteShift)*16,

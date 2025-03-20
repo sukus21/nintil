@@ -36,10 +36,8 @@ func DecodeDebugMap(rom *nds.Rom, set int) image.PalettedImage {
 		tileId := raw & 0x03FF
 		tileMirror := raw&0x0400 != 0
 		tileFlip := raw&0x0800 != 0
-		// paletteOffset := (raw >> 8) & 0xF0
 
-		tile := tiles[tileId]
-		tile.Palette = palette // [paletteOffset : paletteOffset+16]
+		tile := &tiles[tileId]
 
 		mask := mapWidth - 1
 		x := ((i / 2) & (mask)) * 8

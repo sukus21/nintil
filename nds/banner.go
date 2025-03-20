@@ -144,10 +144,9 @@ func SerializeIcon(src image.Image) ([]byte, image.PalettedImage, error) {
 	palettedDraw.Palette = palette
 
 	// Create palette and tiles at the same time
-	tiles := make([]*Tile, 16)
-	for i := 0; i < 16; i++ {
-		t := new(Tile)
-		t.Palette = palette
+	tiles := make([]Tile, 16)
+	for i := range tiles {
+		t := &tiles[i]
 		for j := 0; j < 64; j++ {
 			x := 8*(i&3) + (j & 7)
 			y := 8*(i>>2) + (j >> 3)
@@ -157,7 +156,7 @@ func SerializeIcon(src image.Image) ([]byte, image.PalettedImage, error) {
 				if err != nil {
 					return nil, nil, err
 				}
-				t.pix[j] = idx
+				t.Pix[j] = idx
 				palettedDraw.SetColorIndex(x, y, idx)
 			} else {
 				idx := paletted.ColorIndexAt(x, y)
@@ -169,10 +168,9 @@ func SerializeIcon(src image.Image) ([]byte, image.PalettedImage, error) {
 					return nil, nil, fmt.Errorf("malformed image: Pixels cannot have partial transparency")
 				}
 				palette[idx] = color.RGBA{byte(r), byte(g), byte(b), byte(a)}
-				t.pix[j] = idx
+				t.Pix[j] = idx
 			}
 		}
-		tiles[i] = t
 	}
 
 	// Serialize ALL the things!
@@ -232,11 +230,10 @@ func OpenBanner(r io.Reader) (*banner, error) {
 	// Turn into one big image
 	icon := image.NewPaletted(image.Rect(0, 0, 32, 32), palette)
 	b.icon = icon
-	for i, v := range tiles {
-		v.Palette = palette
+	for i := range tiles {
 		x := (i & 3) * 8
 		y := (i >> 2) * 8
-		DrawTileSamePalette(icon, v, x, y, false, false)
+		DrawTileSamePalette(icon, &tiles[i], x, y, false, false)
 	}
 
 	// Read titles

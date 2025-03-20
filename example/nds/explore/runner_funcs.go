@@ -122,7 +122,7 @@ func addNdsFuncs(r *Runner) {
 		tlm := bytes.NewReader(ReadArg[[]byte](r))
 		pal := nds.DeserializePalette(ReadArg[[]byte](r), true)
 
-		var tls []*nds.Tile
+		var tls []nds.Tile
 		if bpp == 4 {
 			tls = nds.DeserializeTiles4BPP(gfx)
 		} else if bpp == 8 {
@@ -148,7 +148,7 @@ func addNdsFuncs(r *Runner) {
 		gfx := ReadArg[[]byte](r)
 		pal := nds.DeserializePalette(ReadArg[[]byte](r), true)
 
-		var tls []*nds.Tile
+		var tls []nds.Tile
 		if bpp == 4 {
 			tls = nds.DeserializeTiles4BPP(gfx)
 		} else if bpp == 8 {

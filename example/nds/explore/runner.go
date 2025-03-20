@@ -310,7 +310,7 @@ func drawImgBitmap(w int, h int, t4bpp bool, gfx *bytes.Reader, pal color.Palett
 	return img
 }
 
-func drawImgTilemap(w int, h int, tls []*nds.Tile, tlm *bytes.Reader, pal color.Palette) image.Image {
+func drawImgTilemap(w int, h int, tls []nds.Tile, tlm *bytes.Reader, pal color.Palette) image.Image {
 	img := image.NewPaletted(
 		image.Rect(0, 0, w*8, h*8),
 		pal,
@@ -325,8 +325,7 @@ func drawImgTilemap(w int, h int, tls []*nds.Tile, tlm *bytes.Reader, pal color.
 		tileFlip := raw&0x0800 != 0
 		// tilePal := int(raw >> 12)
 
-		tile := tls[tileId]
-		tile.Palette = pal
+		tile := &tls[tileId]
 		x := xt * 8
 		y := yt * 8
 		xt++
