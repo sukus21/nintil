@@ -104,7 +104,7 @@ Reads an immediate 32-bit value from the program code.
 The value fetched is fetched using `ldr`, but since the program buffer is only guaranteed to be 16-bit aligned, watch out for misaligned reads.
 
 The pointer to read data from is generated like so:
-`manager.PC + offset + (index * 4) + 2`
+`manager.PC + offset + (index * 2) + 2`
 
 ### `0x000E`: CM_SETIMM
 `CM_SETIMM_IDX(offset: s32): s32`
