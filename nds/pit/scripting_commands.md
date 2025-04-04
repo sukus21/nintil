@@ -1,4 +1,89 @@
-# VM commands
+# AlphaDream VM documentation
+
+This is documentation for the specific VM used in Partners in Time.
+The VMs used in the rest of the M&L series are similar, but not identical.
+
+Huge thanks to the people at [BIS-docs](https://mnl-modding.github.io/BIS-docs/) for helping me figure this stuff out ❤️
+
+# Command parsing
+Before parsing even begins, the VM has a table with command opcode attributes.
+It is not yet know exactly what these attributes look like, but they play a critical role in command parsing.
+The table is constant and never changes.
+
+Note in the following pseudo-code, `vm.read()` consumes 16 bits of data from the program.
+See [variable addressing modes](#variable-addressing-modes) for information on `vm.readVariables()`.
+[Command structs](#command-struct) are roughly read like this:
+```go
+// Read command metadata
+command.opcode = vm.read()
+attributes := vm.getAttributes(opcode)
+if attributes.hasResult {
+    command.result = vm.read()
+}
+if attributes.hasFlags {
+    command.flags = cm.read()
+}
+
+// Read arguments
+for i := 0; i < attributes.numArguments; i++ {
+    if command.flags & (1 << i) == 0 {
+        command.arguments[i] = vm.read()
+    } else {
+        command.arguments[i] = vm.readVariable(vm.read());
+    }
+}
+```
+
+## Variable addressing modes
+When reading a VM variable, the top 4 bits of the variable are not used for the address, but for addressing mode.
+Here is a list of known addressing modes:
+
+### `0x0000`: 0
+This addressing mode always returns 0.
+
+### `0x1000`: value from manager
+Reads a value from the script manager.
+Maybe from the stack? not sure...
+`return (u32*)(scriptManager)[1 + variable];`
+
+### `0x2000`: boolean flag
+Reads a single bit from a bitlist.
+Almost identical to `0xE000` + `0xF000`, but only has 12 bits for bit index.
+The bitlist read from is also not the same.
+
+### `0x3000`: field specific
+Calls to a function that is only valid when overlay 0 (field program) is loaded.
+If jumped to in battle, will probably crash the game completely.
+Unknown exactly what happens and what is returned.
+
+### `0x4000`: battle specific
+Same as `0x3000`, but for battles.
+Unknown what is returned from this method (more research needed).
+
+### `0x5000` through `0xD000`: TBD
+**More research needed!**
+
+## `0xE000` and `0xF000`: boolean flag
+Reads a single bit from a bitlist.
+The purpose of this bitlist is currently unknown.
+The value in the lower 13 (yes 13, not 12. That's why both E and F) is the bit index.
+
+## Data types
+
+### Command struct
+A command in the PiT VM looks like this:
+```C
+struct VmCommand {
+    0x00:   u16,        opcode      // The command opcode
+    0x02:   u16,        result      // The variable to store the result at
+    0x04:   u16,        flags       // Determines if an argument is an immediate or not
+    0x06:   u16,        _           // unknown
+    0x08:   [16]i32,    arguments   // Command arguments
+    0x48:   u16,        _           // unknown
+}
+```
+
+# Command opcodes
 
 All instructions return a status of `0` to the interpreter, unless otherwise noted.
 
