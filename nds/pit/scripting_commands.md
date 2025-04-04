@@ -7,6 +7,7 @@ data types:
 * sXX = signed XX-bit int
 * uXX = unsigned XX-bit int
 * iXX = XX-bit int, can be either signed or unsigned
+* fx32 = signed 32-bit fixed point number with 12-bit fractional part
 
 ## Common commands (CM_*)
 
@@ -97,8 +98,8 @@ Bits 3 and 4 determine if the value should be popped from the stack, or just rea
 
 Cases not listed in either bitfield do nothing.
 
-### `0x000D`: CM_SETIMM_IDX
-`CM_SETIMM_IDX(offset: s32, index: s32): s32`
+### `0x000D`: CM_MOV_OFFSET_IDX
+`CM_MOV_OFFSET_IDX(offset: s32, index: s32): s32`
 
 Reads an immediate 32-bit value from the program code.
 The value fetched is fetched using `ldr`, but since the program buffer is only guaranteed to be 16-bit aligned, watch out for misaligned reads.
@@ -106,8 +107,8 @@ The value fetched is fetched using `ldr`, but since the program buffer is only g
 The pointer to read data from is generated like so:
 `manager.PC + offset + (index * 2) + 2`
 
-### `0x000E`: CM_SETIMM
-`CM_SETIMM_IDX(offset: s32): s32`
+### `0x000E`: CM_MOV_OFFSET
+`CM_MOV_OFFSET(offset: s32): s32`
 
 Reads an immediate 32-bit value from the program code.
 The value fetched is fetched using `ldr`, but since the program buffer is only guaranteed to be 16-bit aligned, watch out for misaligned reads.
@@ -115,36 +116,36 @@ The value fetched is fetched using `ldr`, but since the program buffer is only g
 The pointer to read data from is generated like so:
 `manager.PC + offset`
 
-### `0x000F`: CM_SET
-`CM_SET(value: i32): i32`
+### `0x000F`: CM_MOV_INT
+`CM_MOV_INT(value: i32): i32`
 
 Returns the input value.
 Might seem useless, except arguments don't work the way you'd expect in the VM.
 This is the most direct way to move a value from one variable to another.
 
-### `0x0010`: CM_ADD
-`CM_ADD(a: i32, b: i32): i32`
+### `0x0010`: CM_ADD_INT
+`CM_ADD_INT(a: i32, b: i32): i32`
 
 returns `a + b`.
 
-### `0x0011`: CM_SUB
-`CM_SUB(a: i32, b: i32): i32`
+### `0x0011`: CM_SUB_INT
+`CM_SUB_INT(a: i32, b: i32): i32`
 
 returns `a - b`.
 
-### `0x0012`: CM_MUL
-`CM_MUL(a: i32, b: i32): i32`
+### `0x0012`: CM_MUL_INT
+`CM_MUL_INT(a: i32, b: i32): i32`
 
 returns `a * b`.
 
-### `0x0013`: CM_DIV_SOFT
-`CM_DIV_SOFT(a: s32, b: s32): s32`
+### `0x0013`: CM_DIV_INT
+`CM_DIV_INT(a: s32, b: s32): s32`
 
 Divides using software division.
 returns `a / b`.
 
-### `0x0014`: CM_MOD_SOFT
-`CM_MOD_SOFT(a: s32, b: s32): s32`
+### `0x0014`: CM_MOD_INT
+`CM_MOD_INT(a: s32, b: s32): s32`
 
 Find the remainder using software division.
 Returns `a % b`.
@@ -155,7 +156,7 @@ Returns `a % b`.
 Shifts `a` left by the value in `b`.
 Returns `a << b`.
 
-### `0x0016`: CM_MOD_SOFT
+### `0x0016`: CM_ASR
 `CM_ASR(a: s32, b: i8): s32`
 
 Shifts `a` right by the value in `b`.
@@ -187,44 +188,154 @@ returns `a == 0`.
 
 returns `a ^ -1`.
 
-### `0x001C`: CM_SQRT_HARD
-`CM_SQRT_HARD(a: u32): u32`
+### `0x001C`: CM_SQRT_INT
+`CM_SQRT_INT(a: u32): u32`
 
 Calculates the square root using the ARM9 hardware square root math registers.
 returns `sqrt(a)`.
 
-### `0x001D`: CM_CURT_HARD
-`CM_CURT_HARD(a: u32): u32`
+### `0x001D`: CM_INVSQRT_INT
+`CM_INVSQRT_INT(a: s32): i32`
 
-Calculates the cubic root using the ARM9 hardware square root and division math registers.
-Actually, I'm not totally sure of this one.
-The documentation on [Yoshi's Lighthouse](https://www.tapatalk.com/groups/lighthouse_of_yoshi/scripting-t372.html) claims this MIGHT be cubic root, but I can't tell from just looking at the code.
+Calculates the inverse square root using the ARM9 hardware math registers.
 
-returns `curt(a)`.
+**More research needed!**
+Not exactly sure what the purpose of this is.
+The inverse square root of any integer will always be 1, or less than 1.
+In cases less than one, it is rounded down to an integer, and the result is 0...
+So the result of this command is 1 if the input is 1, otherwise 0...?
 
-### `0x001E`: CM_DIV_HARD
-`CM_DIV_HARD(a: s32, b: s32): s32`
+returns `1 / sqrt/(a)`.
 
-Divides using hardware division.
-returns `a / b`.
+### `0x001E`: CM_INVERT_INT
+`CM_INVERT_INT(a: s32): s32`
 
-### `0x001F`: CM_COS
-`CM_COS(a: s32): s16`
+Calculates the inverse of a number using ARM9 hardware division math registers.
+returns `1 / a`.
+
+### `0x001F`: CM_COS_INT
+`CM_COS_INT(a: s32): s16`
 
 Returns the cosine of `s32`.
-Not entirely sure what the range of values are...
-Also not sure of this even calculates the cosine, or just uses the lookup table.
+The value is fetched from a lookup table in the ARM9 binary, which contains `0x1000` sine and cosine pairs.
+Not exactly sure what the range of values are, more research needed.
 
-More research needed!
+Returns `cos(a * ?)`.
 
-### `0x0020`: CM_SIN
-`CM_SIN(a: s32): s16`
+### `0x0020`: CM_SIN_INT
+`CM_SIN_INT(a: s32): s16`
 
 Returns the sine of `s32`.
-Not entirely sure what the range of values are...
-Also not sure of this even calculates the sine, or just uses the lookup table.
+The value is fetched from a lookup table in the ARM9 binary, which contains `0x1000` sine and cosine pairs.
+Not exactly sure what the range of values are, more research needed.
 
-More research needed!
+Returns `sin(a * ?)`.
+
+### `0x0021`: CM_ATAN_INT
+`CM_ATAN_INT(a: s32): s32`
+
+### `0x0022`: CM_ATAN2_INT
+`CM_ATAN2_INT(y: s32, x: s32): s32`
+
+### `0x0023`: CM_RANDOM
+`CM_RANDOM(max: u16): u16`
+
+Returns a random value: `0 <= X < max`.
+
+### `0x0024`: CM_MOV_FIXED
+`CM_MOV_FIXED(value: fx32): fx32`
+
+Same as `CM_MOV_INT`, but takes [fixed point parameters](#fixed-point-parameter).
+
+### `0x0025`: CM_TRUNC_FIXED
+`CM_TRUNC_FIXED(value: fx32): s32`
+
+Uses [fixed point parameters](#fixed-point-parameter).
+Removes the fraction part and returns an integer.
+
+### `0x0026`: CM_FLOOR_FIXED
+`CM_FLOOR_FIXED(value: fx32): fx32`
+
+Uses [fixed point parameters](#fixed-point-parameter).
+Clears the fraction bits.
+
+### `0x0027`: CM_ADD_FIXED
+`CM_ADD_FIXED(a: fx32, b: fx32): fx32`
+
+Same as `CM_ADD_INT`, but uses [fixed point parameters](#fixed-point-parameter).
+
+### `0x0028`: CM_SUB_FIXED
+`CM_SUB_FIXED(a: fx32, b: fx32): fx32`
+
+Same as `CM_SUB_INT`, but uses [fixed point parameters](#fixed-point-parameter).
+
+### `0x0029`: CM_MUL_FIXED
+`CM_MUL_FIXED(a: fx32, b: fx32): fx32`
+
+Same as `CM_MUL_INT`, but uses [fixed point parameters](#fixed-point-parameter).
+
+### `0x002A`: CM_DIV_FIXED
+`CM_DIV_FIXED(a: fx32, b: fx32): fx32`
+
+Divides using hardware division.
+Uses [fixed point parameters](#fixed-point-parameter).
+returns `a / b`.
+
+### `0x002B`: CM_MOD_FIXED
+`CM_MOD_FIXED(a: fx32, b: fx32): fx32`
+
+Find the remainder using hardware division.
+Uses [fixed point parameters](#fixed-point-parameter).
+Returns `a % b`.
+
+### `0x002C`: CM_SQRT_FIXED
+`CM_SQRT_FIXED(a: fx32): fx32`
+
+Calculates the square root using the ARM9 hardware square root math registers.
+Uses [fixed point parameters](#fixed-point-parameter).
+returns `sqrt(a)`.
+
+### `0x002D`: CM_INVSQRT_FIXED
+`CM_INVSQRT_FIXED(a: fx32): fx32`
+
+Calculates the inverse square root using the ARM9 hardware math registers.
+Uses [fixed point parameters](#fixed-point-parameter).
+returns `1.0 / sqrt/(a)`.
+
+### `0x002E`: CM_INVERT_FIXED
+`CM_INVERT_FIXED(a: fx32): fx32`
+
+Calculates the inverse of a number using ARM9 hardware division math registers.
+Uses [fixed point parameters](#fixed-point-parameter).
+returns `1.0 / a`.
+
+### `0x002F`: CM_COS_FIXED
+`CM_COS_FIXED(a: fx32): fx32`
+
+Uses [fixed point parameters](#fixed-point-parameter).
+The value is fetched from a lookup table in the ARM9 binary, which contains `0x1000` sine and cosine pairs.
+
+Returns `cos(a)`.
+
+### `0x0030`: CM_SIN_FIXED
+`CM_SIN_FIXED(a: fx32): fx32`
+
+Uses [fixed point parameters](#fixed-point-parameter).
+The value is fetched from a lookup table in the ARM9 binary, which contains `0x1000` sine and cosine pairs.
+
+Returns `sin(a)`.
+
+### `0x0031`: CM_ATAN_FIXED
+`CM_ATAN_FIXED(a: fx32): fx32`
+
+Same as `CM_ATAN_INT`, but uses [fixed point parameters](#fixed-point-parameter).
+
+### `0x0032`: CM_ATAN2_INT
+`CM_ATAN2_INT(y: fx32, x: fx32): s32`
+
+Same as `CM_ATAN2_INT`, but uses [fixed point parameters](#fixed-point-parameter).
+
+
 
 ## Data types
 
@@ -241,4 +352,24 @@ More research needed!
 0x08: (a ^ b) != 0
 0x09: a == 0
 0x0a: a != -1 // 0xFFFFFFFF
+```
+
+### Fixed point parameter
+If a command takes `fx32` as a parameter, and the parameter is an immediate, two arguments are consumed to form a single `f32`.
+
+For example, `CM_ADD_FIXED` takes 2 `fx32` arguments.
+```go
+var fx32Args [2]fx32;
+
+// Get fx32 argument 0
+fx32Args[0] = command.arguments[0]
+if command.isImmediate(0) {
+    fx32Args[0] = command.arguments[0] | (command.arguments[1] << 16)
+}
+
+// Get fx32 argument 1
+fx32Args[1] = command.arguments[2]
+if command.isImmediate(2) {
+    fx32Args[1] = command.arguments[2] | (command.arguments[3] << 16)
+}
 ```
