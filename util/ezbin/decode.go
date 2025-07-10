@@ -130,13 +130,15 @@ func decodeValue(t reflect.Value, r *EndianedReader, tags decodeTags) {
 
 	// Arrays and slices
 	case reflect.Array:
-		decodeArray(t, r)
+		decodeArray(t, r, tags)
 	case reflect.Slice:
 		if tags.length < 0 {
 			panic(ErrSliceMissingLength)
 		}
 		val := reflect.MakeSlice(t.Type(), tags.length, tags.length)
-		decodeArray(val, r)
+
+		tags.length = defaultTags.length
+		decodeArray(val, r, tags)
 		if t.CanSet() {
 			t.Set(val)
 		}
@@ -165,10 +167,10 @@ func decodeValue(t reflect.Value, r *EndianedReader, tags decodeTags) {
 	}
 }
 
-func decodeArray(t reflect.Value, r *EndianedReader) {
+func decodeArray(t reflect.Value, r *EndianedReader, tags decodeTags) {
 	elems := t.Len()
 	for i := range elems {
-		decodeValue(t.Index(i), r, defaultTags)
+		decodeValue(t.Index(i), r, tags)
 	}
 }
 
