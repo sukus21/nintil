@@ -214,7 +214,24 @@ func (d *decoder) decodeSlice(t reflect.Value, tags reflect.StructTag) {
 		panic(ErrSliceMissingLength)
 	}
 
-	length := int(d.getInt(lengthTag))
+	// Parse length tag
+	lengthParts := strings.SplitN(lengthTag, ",", 2)
+	length := int(d.getInt(lengthParts[0]))
+
+	// Include another part?
+	if len(lengthParts) == 2 {
+		// Sub-type MUST be byte for this to work
+		contentKind := t.Type().Elem().Kind()
+		if contentKind != reflect.Uint8 && contentKind != reflect.Int8 {
+			panic("length-origin can only be applied to bytes")
+		}
+
+		lengthBase := int(d.getInt(lengthParts[1]))
+		here, _ := At[int](d)
+		length -= here - lengthBase
+	}
+
+	// Read data
 	val := reflect.MakeSlice(t.Type(), length, length)
 	d.decodeArray(val, tags)
 	if t.CanSet() {
