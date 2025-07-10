@@ -344,7 +344,7 @@ func (d *decoder) decodeString(t reflect.Value, tags reflect.StructTag) {
 	// Do we read string from a fixed-length buffer?
 	stringReader := io.Reader(d)
 	if len(parts) == 2 {
-		stringLength := d.getInt(parts[2])
+		stringLength := d.getInt(parts[1])
 		if stringLength < 0 {
 			panic("string cannot have length < 0")
 		}
