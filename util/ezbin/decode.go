@@ -7,6 +7,7 @@ import (
 	"io"
 	"reflect"
 	"strconv"
+	"strings"
 
 	"github.com/sukus21/nintil/util"
 )
@@ -30,10 +31,12 @@ const tagLength = "ezbin_length"
 const tagString = "ezbin_string"
 const tagByteorder = "ezbin_byteorder"
 const tagSeekpos = "ezbin_seekpos"
+const tagFixedPoint = "ezbin_fixedpoint"
 
 type decodeTags struct {
 	length  int
 	xstring string
+	fixed   string
 }
 
 var defaultTags = decodeTags{
@@ -45,6 +48,11 @@ var ErrUnknownLengthProperty = errors.New("field specified in length tag is not 
 var ErrInvalidByteOrderType = errors.New("invalid byte order type, expected [2]byte")
 var ErrInvalidByteOrder = errors.New("invalid byte order, expected 0xFEFF or 0xFFFE")
 var ErrUnknownString = errors.New("unknown string type")
+var ErrInvalidFixedPointSignature = errors.New("invalid fixed point tag, expected \"int,int,int\"")
+var ErrInvalidFixedPointSize = errors.New("invalid fixed point size, expected multiple of 8 bits, max 64")
+var ErrInvalidFixedPointBits = errors.New("invalid fixed point bits, bit counts cannot be below 0")
+var ErrInvalidFixedPointSign = errors.New("invalid fixed point sign, sign can only be 0 or 1 bit")
+var ErrInvalidFixedPointType = errors.New("invalid fixed point type, expected float32 or float64")
 var ErrNotSeeker = errors.New("reader does not implement io.Seeker")
 var ErrInvalidSeekposType = errors.New("invalid seekpos type, expected integer")
 
@@ -96,12 +104,12 @@ func decodeValue(t reflect.Value, r *EndianedReader, tags decodeTags) {
 			t.SetInt(val)
 		}
 	case reflect.Float32:
-		val := float64(ReadSingle[float32](r))
+		val := decodeFloat[float32](r, tags)
 		if t.CanSet() {
 			t.SetFloat(val)
 		}
 	case reflect.Float64:
-		val := float64(ReadSingle[float64](r))
+		val := decodeFloat[float64](r, tags)
 		if t.CanSet() {
 			t.SetFloat(val)
 		}
@@ -117,7 +125,7 @@ func decodeValue(t reflect.Value, r *EndianedReader, tags decodeTags) {
 			t.Set(reflect.ValueOf(newEndian))
 
 		default:
-			panic("cannot deserialize this kind of type")
+			panic("cannot decode this kind of type")
 		}
 
 	// Arrays and slices
@@ -159,7 +167,7 @@ func decodeValue(t reflect.Value, r *EndianedReader, tags decodeTags) {
 
 func decodeArray(t reflect.Value, r *EndianedReader) {
 	elems := t.Len()
-	for i := 0; i < elems; i++ {
+	for i := range elems {
 		decodeValue(t.Index(i), r, defaultTags)
 	}
 }
@@ -168,7 +176,7 @@ func decodeStruct(t reflect.Value, r *EndianedReader) {
 	numFields := t.NumField()
 	seenInts := make(map[string]int)
 
-	for i := 0; i < numFields; i++ {
+	for i := range numFields {
 		fieldType := t.Type().Field(i)
 		field := t.Field(i)
 
@@ -202,6 +210,9 @@ func decodeStruct(t reflect.Value, r *EndianedReader) {
 		}
 		if stringType, ok := fieldType.Tag.Lookup(tagString); ok {
 			tags.xstring = stringType
+		}
+		if fixedType, ok := fieldType.Tag.Lookup(tagFixedPoint); ok {
+			tags.fixed = fixedType
 		}
 
 		// Decode value of field
@@ -256,6 +267,73 @@ func decodeString(t reflect.Value, r *EndianedReader, tags decodeTags) {
 	if t.CanSet() {
 		t.SetString(str)
 	}
+}
+
+func decodeFloat[T float32 | float64](r *EndianedReader, tags decodeTags) float64 {
+	if tags.fixed != "" {
+		return decodeFixedPoint(r, tags.fixed)
+	} else {
+		return float64(ReadSingle[T](r))
+	}
+}
+
+func decodeFixedPoint(r *EndianedReader, fixedTag string) float64 {
+	bits := strings.Split(fixedTag, ",")
+	if len(bits) != 3 {
+		panic(ErrInvalidFixedPointSignature)
+	}
+
+	// Get bit counts
+	totalBits := 0
+	bitCounts := [3]int{}
+	for i := range bitCounts {
+		bitCount, err := strconv.ParseInt(bits[i], 0, 64)
+		if err != nil {
+			panic(ErrInvalidFixedPointSignature)
+		}
+
+		bitCounts[i] = int(bitCount)
+		totalBits += int(bitCount)
+	}
+
+	// Validate bit count in fixed-point field
+	if totalBits&0x7 != 0 || totalBits > 64 {
+		panic(ErrInvalidFixedPointSize)
+	}
+	if bitCounts[0] != 0 && bitCounts[0] != 1 {
+		panic(ErrInvalidFixedPointSign)
+	}
+	if bitCounts[1] < 0 || bitCounts[2] < 0 {
+		panic(ErrInvalidFixedPointBits)
+	}
+
+	// Read bits
+	rawData := uint64(0)
+	rawBytes := make([]byte, totalBits/8)
+	util.Must1(r.ReadWithOrder(rawBytes))
+	for i := range rawBytes {
+		rawData |= uint64(rawBytes[i]) << ((len(rawBytes) - (i + 1)) * 8)
+	}
+
+	// Get number parts
+	negative := bitCounts[0] == 1 && (rawData&(1<<(totalBits-1))) != 0
+	if negative {
+		rawData ^= (1 << totalBits) - 1
+		rawData += 1
+		bitCounts[1] += 1
+	}
+
+	fraction := rawData & ((1 << bitCounts[2]) - 1)
+	whole := (rawData >> bitCounts[2]) & ((1 << bitCounts[1]) - 1)
+
+	// Convert to float
+	final := float64(whole)
+	final += float64(fraction) / float64(int(1)<<bitCounts[2])
+	if negative {
+		final = -final
+	}
+
+	return final
 }
 
 func GetEndianFromSignature(signature [2]byte) binary.ByteOrder {
