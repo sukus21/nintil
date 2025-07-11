@@ -191,7 +191,7 @@ func (d *decoder) decodeValue(t reflect.Value, tags reflect.StructTag) {
 			t.SetBool(val)
 		}
 	case reflect.Pointer:
-		val := reflect.New(t.Type())
+		val := reflect.New(t.Type().Elem())
 		d.decodeValue(val.Elem(), tags)
 		if t.CanSet() {
 			t.Set(val)
