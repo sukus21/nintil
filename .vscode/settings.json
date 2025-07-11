@@ -1,0 +1,8 @@
+{
+    "[gbz80]": {
+        "editor.wordBasedSuggestions": "off",
+        "editor.tabSize": 8,
+        "editor.insertSpaces": false,
+        "editor.autoIndent": "keep"
+    }
+}
