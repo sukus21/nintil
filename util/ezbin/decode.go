@@ -105,6 +105,26 @@ func (d *decoder) getInt(intName string) int64 {
 }
 
 func (d *decoder) decodeValue(t reflect.Value, tags reflect.StructTag) {
+	// Offset tag, move position
+	if offsetType, ok := tags.Lookup(tagOffset); ok {
+		if d.Seeker == nil {
+			panic(ErrNotSeeker)
+		}
+		offsetParts := strings.SplitN(offsetType, ",", 2)
+
+		// Get data offset
+		offset := d.getInt(offsetParts[0])
+		if len(offsetParts) == 2 {
+			offset += d.getInt(offsetParts[1])
+		}
+
+		// Save current offset and set new offset
+		posBefore := util.Must1(At[int64](d.Seeker))
+		util.Must1(d.Seeker.Seek(offset, io.SeekStart))
+
+		defer util.Must1(d.Seeker.Seek(posBefore, io.SeekStart))
+	}
+
 	switch t.Kind() {
 
 	// Basic kinds
@@ -233,16 +253,25 @@ func (d *decoder) decodeSlice(t reflect.Value, tags reflect.StructTag) {
 
 	// Read data
 	val := reflect.MakeSlice(t.Type(), length, length)
-	d.decodeArray(val, tags)
+	d.decodeArray(val, StructTagRemove(tags, tagLength))
 	if t.CanSet() {
 		t.Set(val)
 	}
 }
 
 func (d *decoder) decodeArray(t reflect.Value, tags reflect.StructTag) {
+	// Array offset tag?
+	memberTags := tags
+	if arrayOffset, ok := tags.Lookup(tagOffsetArray); ok {
+		memberTags = StructTagRemove(memberTags, tagOffsetArray)
+		memberTags = StructTagRemove(memberTags, tagOffset)
+		memberTags = StructTagAdd(memberTags, tagOffset, arrayOffset)
+	}
+
+	// Decode array
 	elems := t.Len()
 	for i := range elems {
-		d.decodeValue(t.Index(i), tags)
+		d.decodeValue(t.Index(i), memberTags)
 	}
 
 	// Set byte order?
@@ -291,24 +320,6 @@ func (d *decoder) decodeField(field reflect.Value, fieldType reflect.StructField
 	if tellName, ok := fieldType.Tag.Lookup(tagTell); ok {
 		d.decodeTell(field, tellName)
 		return
-	}
-
-	// Offset tag, move position
-	if offsetType, ok := fieldType.Tag.Lookup(tagOffset); ok {
-		if d.Seeker == nil {
-			panic(ErrNotSeeker)
-		}
-
-		// Get data offset
-		offset := d.getInt(offsetType)
-
-		// Save current offset and set new offset
-		posBefore := util.Must1(At[int64](d.Seeker))
-		util.Must1(d.Seeker.Seek(d.offset+offset, io.SeekStart))
-
-		defer func() {
-			util.Must1(d.Seeker.Seek(posBefore, io.SeekStart))
-		}()
 	}
 
 	// Decode value of field
