@@ -113,14 +113,15 @@ func (d *decoder) decodeValue(t reflect.Value, tags reflect.StructTag) {
 		offsetParts := strings.SplitN(offsetType, ",", 2)
 
 		// Get data offset
+		offsetBase := d.offset
 		offset := d.getInt(offsetParts[0])
 		if len(offsetParts) == 2 {
-			offset += d.getInt(offsetParts[1])
+			offsetBase = d.getInt(offsetParts[1])
 		}
 
 		// Save current offset and set new offset
 		posBefore := util.Must1(At[int64](d.Seeker))
-		util.Must1(d.Seeker.Seek(offset, io.SeekStart))
+		util.Must1(d.Seeker.Seek(offsetBase+offset, io.SeekStart))
 
 		defer util.Must1(d.Seeker.Seek(posBefore, io.SeekStart))
 	}
