@@ -7,6 +7,7 @@ import (
 	"image/color"
 	"io"
 
+	"github.com/sukus21/nintil/nds"
 	"github.com/sukus21/nintil/util"
 	"github.com/sukus21/nintil/util/ezbin"
 )
@@ -14,6 +15,12 @@ import (
 type NCBR struct {
 	Char image.PalettedImage
 	Cpos blockCPOS
+}
+
+type NCGR struct {
+	Tiles []nds.Tile
+	Bpp   int // 4 or 8
+	Cpos  blockCPOS
 }
 
 type blockCHAR struct {
@@ -75,6 +82,50 @@ func ReadNCBR(r io.ReadSeeker, palette color.Palette) (_ *NCBR, err error) {
 
 		default:
 			return nil, fmt.Errorf("NCBR: invalid block type: %q", block.Stamp)
+		}
+	}
+
+	return out, nil
+}
+
+func ReadNCGR(r io.ReadSeeker) (_ *NCGR, err error) {
+	defer util.Recover(&err)
+	out := new(NCGR)
+
+	g2d := util.Must1(ezbin.Decode[G2DFile](r))
+	for i := range g2d.Blocks {
+		block := &g2d.Blocks[i]
+		br := bytes.NewReader(block.Data)
+
+		switch block.Stamp {
+		case "RAHC": // CHAR
+			char, err := ezbin.Decode[blockCHAR](br)
+			if err != nil {
+				return nil, err
+			}
+
+			// Decode tiles, either 4bpp or 8bpp
+			switch char.ColorFormat {
+			case 3:
+				out.Bpp = 4
+				out.Tiles = nds.DeserializeTiles4BPP(char.GraphicsData)
+			case 4:
+				out.Bpp = 8
+				out.Tiles = nds.DeserializeTiles8BPP(char.GraphicsData)
+			default:
+				return nil, fmt.Errorf("NCGR: invalid color format")
+			}
+
+		case "SOPC": // COPS
+			cpos, err := ezbin.Decode[blockCPOS](br)
+			if err != nil {
+				return nil, err
+			}
+
+			out.Cpos = cpos
+
+		default:
+			return nil, fmt.Errorf("NCGR: invalid block type: %q", block.Stamp)
 		}
 	}
 
