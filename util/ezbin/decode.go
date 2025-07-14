@@ -107,6 +107,7 @@ func (d *decoder) getInt(intName string) int64 {
 func (d *decoder) decodeValue(t reflect.Value, tags reflect.StructTag) {
 	// Offset tag, move position
 	if offsetType, ok := tags.Lookup(tagOffset); ok {
+		tags = StructTagRemove(tags, tagOffset)
 		if d.Seeker == nil {
 			panic(ErrNotSeeker)
 		}
@@ -121,9 +122,12 @@ func (d *decoder) decodeValue(t reflect.Value, tags reflect.StructTag) {
 
 		// Save current offset and set new offset
 		posBefore := util.Must1(At[int64](d.Seeker))
-		util.Must1(d.Seeker.Seek(offsetBase+offset, io.SeekStart))
 
-		defer util.Must1(d.Seeker.Seek(posBefore, io.SeekStart))
+		// Seek, read, reset position, and return
+		util.Must1(d.Seeker.Seek(offsetBase+offset, io.SeekStart))
+		d.decodeValue(t, tags)
+		util.Must1(d.Seeker.Seek(posBefore, io.SeekStart))
+		return
 	}
 
 	switch t.Kind() {
