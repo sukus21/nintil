@@ -13,6 +13,11 @@ import (
 	"github.com/sukus21/nintil/util"
 )
 
+type Decodable interface {
+	// Reader may be an io.Seeker as well
+	EzbinDecode(r io.Reader) error
+}
+
 const tagLength = "ezbin_length"
 const tagString = "ezbin_string"
 const tagByteorder = "ezbin_byteorder"
@@ -84,6 +89,8 @@ func (d *decoder) clone() *decoder {
 	return c
 }
 
+var typeofDecodable = reflect.TypeFor[Decodable]()
+
 // Tries to read an int.
 // It tries the following, in this order:
 //
@@ -127,6 +134,23 @@ func (d *decoder) decodeValue(t reflect.Value, tags reflect.StructTag) {
 		util.Must1(d.Seeker.Seek(offsetBase+offset, io.SeekStart))
 		d.decodeValue(t, tags)
 		util.Must1(d.Seeker.Seek(posBefore, io.SeekStart))
+		return
+	}
+
+	// Does subject implement the thing?
+	if t.Type().Implements(typeofDecodable) {
+		nv := reflect.New(t.Type()).Elem()
+		iface := nv.Interface().(Decodable)
+		util.Must(iface.EzbinDecode(d))
+		t.Set(nv)
+		return
+	}
+
+	if reflect.PointerTo(t.Type()).Implements(typeofDecodable) {
+		nvp := reflect.New(t.Type())
+		iface := nvp.Interface().(Decodable)
+		util.Must(iface.EzbinDecode(d))
+		t.Set(nvp.Elem())
 		return
 	}
 
