@@ -24,6 +24,7 @@ const tagFixedPoint = "ezbin_fixedpoint"
 const tagTell = "ezbin_tell"
 const tagOffset = "ezbin_offset"
 const tagOffsetArray = "ezbin_offset_array"
+const tagIgnore = "ezbin_ignore"
 
 var ErrSliceMissingLength = errors.New("cannot decode slice without length tag")
 var ErrUnknownNamedInt = errors.New("malformed int or invalid named int field")
@@ -344,6 +345,11 @@ func (d *decoder) decodeStruct(t reflect.Value) {
 }
 
 func (d *decoder) decodeField(field reflect.Value, fieldType reflect.StructField) {
+	// Ignore?
+	if _, ok := fieldType.Tag.Lookup(tagIgnore); ok {
+		return
+	}
+
 	// Tell tag?
 	if tellName, ok := fieldType.Tag.Lookup(tagTell); ok {
 		d.decodeTell(field, tellName)
