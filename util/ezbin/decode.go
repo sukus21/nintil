@@ -446,44 +446,8 @@ func (d *decoder) decodeFixedPoint(fixedTag string) float64 {
 		totalBits += int(bitCount)
 	}
 
-	// Validate bit count in fixed-point field
-	if totalBits&0x7 != 0 || totalBits > 64 {
-		panic(ErrInvalidFixedPointSize)
-	}
-	if bitCounts[0] != 0 && bitCounts[0] != 1 {
-		panic(ErrInvalidFixedPointSign)
-	}
-	if bitCounts[1] < 0 || bitCounts[2] < 0 {
-		panic(ErrInvalidFixedPointBits)
-	}
-
-	// Read bits
-	rawData := uint64(0)
-	rawBytes := make([]byte, totalBits/8)
-	util.Must1(d.ReadWithOrder(rawBytes))
-	for i := range rawBytes {
-		rawData |= uint64(rawBytes[i]) << ((len(rawBytes) - (i + 1)) * 8)
-	}
-
-	// Get number parts
-	negative := bitCounts[0] == 1 && (rawData&(1<<(totalBits-1))) != 0
-	if negative {
-		rawData ^= (1 << totalBits) - 1
-		rawData += 1
-		bitCounts[1] += 1
-	}
-
-	fraction := rawData & ((1 << bitCounts[2]) - 1)
-	whole := (rawData >> bitCounts[2]) & ((1 << bitCounts[1]) - 1)
-
-	// Convert to float
-	final := float64(whole)
-	final += float64(fraction) / float64(int(1)<<bitCounts[2])
-	if negative {
-		final = -final
-	}
-
-	return final
+	// Yahoo
+	return util.Must1(ReadFixedPoint(d, bitCounts[0], bitCounts[1], bitCounts[2]))
 }
 
 func GetEndianFromSignature(signature [2]byte) binary.ByteOrder {

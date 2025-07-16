@@ -24,13 +24,20 @@ func (r *EndianedReader) GetEndian() binary.ByteOrder {
 // Reads bytes as if an integer was read.
 // If big endian, this is the same as reading normally.
 // If little endian, the bytes will be in reversed before being returned.
-func (r *EndianedReader) ReadWithOrder(buf []byte) (n int, err error) {
+func ReadWithOrder(r io.Reader, buf []byte, byteOrder binary.ByteOrder) (n int, err error) {
 	n, err = io.ReadFull(r, buf)
-	if err == nil && r.ByteOrder == binary.LittleEndian {
+	if err == nil && byteOrder == binary.LittleEndian {
 		slices.Reverse(buf)
 	}
 
 	return n, err
+}
+
+// Reads bytes as if an integer was read.
+// If big endian, this is the same as reading normally.
+// If little endian, the bytes will be in reversed before being returned.
+func (r *EndianedReader) ReadWithOrder(buf []byte) (n int, err error) {
+	return ReadWithOrder(r, buf, r.ByteOrder)
 }
 
 type EndianedWriter struct {
@@ -63,4 +70,20 @@ func getEndian(v any) binary.ByteOrder {
 	} else {
 		return DefaultEndian
 	}
+}
+
+func ReadBytesAsInt(r io.Reader, numBytes int) (uint64, error) {
+	buf := [8]byte{}
+
+	rawData := uint64(0)
+	rawBytes := buf[:numBytes]
+	_, err := ReadWithOrder(r, rawBytes, getEndian(r))
+	if err != nil {
+		return 0, err
+	}
+	for i := range rawBytes {
+		rawData |= uint64(rawBytes[i]) << ((len(rawBytes) - (i + 1)) * 8)
+	}
+
+	return uint64(rawData), nil
 }
