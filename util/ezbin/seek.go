@@ -34,6 +34,12 @@ func At[K Integer](w io.Seeker) (K, error) {
 	return Seek(w, K(0), io.SeekCurrent)
 }
 
+// Skips over a few bytes
+func Skip[K Integer](w io.Seeker, num K) (K, error) {
+	n, err := w.Seek(int64(num), io.SeekCurrent)
+	return K(n), err
+}
+
 // Aligns seeker head to match lim (rounds UP)
 func Align[K Integer](s io.Seeker, lim K) (K, error) {
 	pos, _ := s.Seek(0, io.SeekCurrent)
