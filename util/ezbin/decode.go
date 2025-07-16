@@ -1,7 +1,6 @@
 package ezbin
 
 import (
-	"bytes"
 	"encoding/binary"
 	"errors"
 	"io"
@@ -399,35 +398,15 @@ func (d *decoder) decodeString(t reflect.Value, tags reflect.StructTag) {
 	stringType := parts[0]
 
 	// Do we read string from a fixed-length buffer?
-	stringReader := io.Reader(d)
+	stringLength := -1
 	if len(parts) == 2 {
-		stringLength := d.getInt(parts[1])
+		stringLength = int(d.getInt(parts[1]))
 		if stringLength < 0 {
 			panic("string cannot have length < 0")
 		}
-
-		dat := make([]byte, stringLength)
-		util.Must1(io.ReadFull(d, dat))
-		stringReader = bytes.NewReader(dat)
 	}
 
-	str := ""
-	switch stringType {
-	case "ascii":
-		for {
-			b := ReadSingle[byte](stringReader)
-			if b != 0 {
-				str += string(rune(b))
-			} else {
-				break
-			}
-		}
-
-	// TODO: support more string types
-	default:
-		panic(ErrUnknownString)
-	}
-
+	str := util.Must1(ReadString(d, StringFormatFromString(stringType), stringLength))
 	if t.CanSet() {
 		t.SetString(str)
 	}
