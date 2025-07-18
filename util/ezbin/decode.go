@@ -138,7 +138,7 @@ func (d *decoder) decodeValue(t reflect.Value, tags reflect.StructTag) {
 	}
 
 	// Does subject implement the thing?
-	if t.Type().Implements(typeofDecodable) {
+	if t.Type().Implements(typeofDecodable) && t.Kind() != reflect.Pointer {
 		nv := reflect.New(t.Type()).Elem()
 		iface := nv.Interface().(Decodable)
 		util.Must(iface.EzbinDecode(d))
