@@ -141,7 +141,7 @@ func (d *decoder) decodeValue(t reflect.Value, tags reflect.StructTag) {
 	if t.Type().Implements(typeofDecodable) && t.Kind() != reflect.Pointer {
 		nv := reflect.New(t.Type()).Elem()
 		iface := nv.Interface().(Decodable)
-		util.Must(iface.EzbinDecode(d))
+		util.Must(iface.EzbinDecode(d.EndianedReader.Reader))
 		t.Set(nv)
 		return
 	}
@@ -149,7 +149,7 @@ func (d *decoder) decodeValue(t reflect.Value, tags reflect.StructTag) {
 	if reflect.PointerTo(t.Type()).Implements(typeofDecodable) {
 		nvp := reflect.New(t.Type())
 		iface := nvp.Interface().(Decodable)
-		util.Must(iface.EzbinDecode(d))
+		util.Must(iface.EzbinDecode(d.EndianedReader.Reader))
 		t.Set(nvp.Elem())
 		return
 	}
