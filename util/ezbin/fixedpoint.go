@@ -2,6 +2,7 @@ package ezbin
 
 import (
 	"io"
+	"math"
 )
 
 func ReadFixedPoint(r io.Reader, signBits int, wholeBits int, fractBits int) (float64, error) {
@@ -45,6 +46,24 @@ func DecodeFixedPoint(rawData uint64, signBits int, wholeBits int, fractBits int
 	final += float64(fraction) / float64(int(1)<<fractBits)
 	if negative {
 		final = -final
+	}
+
+	return final
+}
+
+func EncodeFixedPoint(float float64, signBits int, wholeBits int, fractBits int) uint64 {
+	isNegative := float < 0
+	float = math.Abs(float)
+	wholef, fractf := math.Modf(float)
+
+	fractf *= float64(int(1) << fractBits)
+	fract := uint64(math.Floor(fractf))
+	whole := uint64(wholef) & ((1 << wholeBits) - 1)
+
+	final := fract + (whole << fractBits)
+	if isNegative {
+		final = -final
+		final &= (1 << (signBits + wholeBits + fractBits)) - 1
 	}
 
 	return final
