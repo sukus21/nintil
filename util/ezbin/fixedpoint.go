@@ -30,7 +30,7 @@ func ReadFixedPoint(r io.Reader, signBits int, wholeBits int, fractBits int) (fl
 func DecodeFixedPoint(rawData uint64, signBits int, wholeBits int, fractBits int) float64 {
 	totalBits := signBits + wholeBits + fractBits
 
-	negative := signBits != 1 && (rawData&(1<<(totalBits-1))) != 0
+	negative := signBits == 1 && (rawData&(1<<(totalBits-1))) != 0
 	if negative {
 		rawData ^= (1 << totalBits) - 1
 		rawData += 1
