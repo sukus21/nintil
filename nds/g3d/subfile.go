@@ -38,6 +38,8 @@ func (f *subfileWrapper) EzbinDecode(r io.Reader) (err error) {
 
 	switch stamp {
 
+	case "MDL0":
+		f.Subfile = util.Must1(ezbin.Decode[*SubfileMDL0](rs))
 	case "TEX0":
 		f.Subfile = util.Must1(ezbin.Decode[*SubfileTEX0](rs))
 
